@@ -1,100 +1,77 @@
 'use client';
-
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { authService } from '../../services/auth.service';
 
 export default function LoginPage() {
-  const router = useRouter();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [formData, setFormData] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault(); 
-    setIsLoading(true);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     setError('');
-
+    setLoading(true);
     try {
-      const result = await authService.login(email, password);
-      
-      // KIỂM TRA DỮ LIỆU: Vì Backend của bạn trả về userId thay vì token
-      if (result.userId) {
-        // Lưu userId vào 'token' để làm dấu hiệu đã đăng nhập cho trang Dashboard
-        localStorage.setItem('token', result.userId.toString());
-        // Lưu toàn bộ object (bao gồm fullName, role) để dùng sau này
-        localStorage.setItem('user', JSON.stringify(result));
-
-        alert('Đăng nhập thành công! Chào mừng ' + result.fullName);
-        router.push('/'); 
-      } else {
-        setError('Dữ liệu phản hồi từ Server không hợp lệ!');
-      }
-      
+      await authService.login(formData);
+      window.location.href = '/'; 
     } catch (err: unknown) {
-      if (err instanceof Error) {
+      if (typeof err === 'string') {
+        setError(err);
+      } else if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError('Đã có lỗi xảy ra');
+        setError('Có lỗi xảy ra!');
       }
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
   return (
-    <div className="flex h-screen items-center justify-center bg-gray-100">
-      <div className="w-full max-w-md bg-white rounded-lg shadow-md p-8">
-        <h2 className="text-3xl font-bold text-center text-blue-600 mb-8">AILEXBA LOGIN</h2>
-        
-        {error && (
-          <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded text-sm text-center">
-            {error}
-          </div>
-        )}
+    <div className="min-h-[70vh] flex items-center justify-center">
+      <div className="w-full max-w-md bg-white p-10 rounded-3xl shadow-xl border border-slate-100">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-extrabold text-slate-900">Mừng trở lại 👋</h1>
+          <p className="text-slate-500 mt-2">Đăng nhập để tiếp tục lộ trình ôn thi.</p>
+        </div>
 
-        <form onSubmit={handleLogin} className="space-y-6">
+        {error && <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 text-sm font-medium rounded-r-lg">{error}</div>}
+
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <label className="block text-sm font-bold text-slate-700 mb-2">Email</label>
             <input 
-              type="email" 
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none"
-              placeholder="email@gmail.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              type="email" required
+              className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+              placeholder="example@.com"
+              value={formData.email}
+              onChange={(e) => setFormData({...formData, email: e.target.value})}
             />
           </div>
-          
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Mật khẩu</label>
+            <label className="block text-sm font-bold text-slate-700 mb-2">Mật khẩu</label>
             <input 
-              type="password" 
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none"
+              type="password" required
+              className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
               placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              value={formData.password}
+              onChange={(e) => setFormData({...formData, password: e.target.value})}
             />
           </div>
-
+          <div className="flex justify-end">
+            <Link href="#" className="text-sm font-bold text-blue-600 hover:underline">Quên mật khẩu?</Link>
+          </div>
           <button 
-            type="submit" 
-            disabled={isLoading}
-            className={`w-full py-2 px-4 rounded-md text-white font-bold transition
-              ${isLoading ? 'bg-blue-300 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
+            type="submit" disabled={loading}
+            className="w-full py-3.5 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-all disabled:opacity-70 disabled:cursor-not-allowed shadow-lg shadow-blue-200"
           >
-            {isLoading ? 'Đang xác thực...' : 'ĐĂNG NHẬP'}
+            {loading ? 'Đang xử lý...' : 'Đăng Nhập'}
           </button>
         </form>
 
-        <p className="mt-6 text-center text-sm text-gray-600">
-          Chưa có tài khoản?{' '}
-          <Link href="/register" className="text-blue-600 hover:underline font-bold">
-            Đăng ký ngay
-          </Link>
+        <p className="text-center text-slate-600 mt-8 text-sm">
+          Chưa có tài khoản? <Link href="/register" className="text-blue-600 font-bold hover:underline">Đăng ký ngay</Link>
         </p>
       </div>
     </div>
