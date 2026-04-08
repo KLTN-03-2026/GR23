@@ -3,7 +3,6 @@ using AILEXBA_Project.Data;
 using AILEXBA_Project.Models;
 using AILEXBA_Project.DTOs;
 using Microsoft.EntityFrameworkCore;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace AILEXBA_Project.Controllers
@@ -23,23 +22,25 @@ namespace AILEXBA_Project.Controllers
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterRequest request)
         {
+            // Kiểm tra email trùng
             if (await _context.Users.AnyAsync(u => u.Email == request.Email))
             {
-                return BadRequest(new { message = "Email này đã được sử dụng." });
+                return BadRequest(new { message = "Email này đã được sử dụng. Quốc thử email khác nhé!" });
             }
 
             var user = new User
             {
                 FullName = request.FullName,
                 Email = request.Email,
+                // Hash mật khẩu để bảo mật
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
-                Role = "Student"
+                Role = "Student" // Mặc định là sinh viên
             };
 
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
 
-            return Ok(new { message = "Đăng ký tài khoản thành công!" });
+            return Ok(new { message = "Đăng ký tài khoản thành công! Giờ Quốc có thể đăng nhập rồi." });
         }
 
         // PB05: Đăng nhập hệ thống
@@ -48,21 +49,27 @@ namespace AILEXBA_Project.Controllers
         {
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
 
+            // Kiểm tra user tồn tại và khớp mật khẩu
             if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
             {
-                return Unauthorized(new { message = "Sai tên đăng nhập hoặc mật khẩu." });
+                return Unauthorized(new { message = "Email hoặc mật khẩu không chính xác." });
             }
 
+            // Trả về thông tin cơ bản để Frontend lưu vào LocalStorage/Cookie
             return Ok(new
             {
                 message = "Đăng nhập thành công!",
-                userId = user.Id,
-                fullName = user.FullName,
-                role = user.Role
+                user = new
+                {
+                    id = user.Id,
+                    fullName = user.FullName,
+                    email = user.Email,
+                    role = user.Role
+                }
             });
         }
 
-        // PB06: Đổi mật khẩu
+        // PB06: Đổi mật khẩu (Cần mật khẩu cũ để đảm bảo chính chủ)
         [HttpPost("change-password")]
         public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
         {
@@ -70,23 +77,22 @@ namespace AILEXBA_Project.Controllers
 
             if (user == null)
             {
-                return NotFound(new { message = "Tài khoản không tồn tại." });
+                return NotFound(new { message = "Không tìm thấy tài khoản này." });
             }
 
-            if (!string.IsNullOrEmpty(request.OldPassword))
+            // Bắt buộc phải có mật khẩu cũ để xác thực (trừ khi Quốc làm tính năng Reset cho Admin)
+            if (string.IsNullOrEmpty(request.OldPassword) || !BCrypt.Net.BCrypt.Verify(request.OldPassword, user.PasswordHash))
             {
-                if (!BCrypt.Net.BCrypt.Verify(request.OldPassword, user.PasswordHash))
-                {
-                    return BadRequest(new { message = "Mật khẩu cũ không chính xác." });
-                }
+                return BadRequest(new { message = "Mật khẩu cũ không chính xác." });
             }
 
+            // Cập nhật mật khẩu mới
             user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
 
             _context.Users.Update(user);
             await _context.SaveChangesAsync();
 
-            return Ok(new { message = "Đặt lại mật khẩu thành công!" });
+            return Ok(new { message = "Cập nhật mật khẩu thành công!" });
         }
     }
 }
