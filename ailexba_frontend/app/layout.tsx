@@ -54,7 +54,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   };
 
   return (
-    <html lang="vi" className="scroll-smooth">
+    <html lang="vi" className="scroll-smooth" suppressHydrationWarning>
       <body className={`${inter.className} bg-[#020617] text-slate-200 min-h-screen flex flex-col`}>
 
         {/* Navbar */}
