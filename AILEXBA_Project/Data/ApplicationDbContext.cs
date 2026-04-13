@@ -13,5 +13,6 @@ namespace AILEXBA_Project.Data
         public DbSet<Answer> Answers { get; set; }
 
         public DbSet<Exam> Exams { get; set; }
+        public DbSet<ExamResult> ExamResults { get; set; }
     }
 }

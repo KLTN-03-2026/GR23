@@ -7,10 +7,10 @@ namespace AILEXBA_Project.Models
     {
         [Key]
         public int Id { get; set; }
-        public string FullName { get; set; }
-        public string Email { get; set; }
-        public string PasswordHash { get; set; }
-        public string Role { get; set; } // Admin hoặc Student
+        public string FullName { get; set; } = null!;
+        public string Email { get; set; } = null!;
+        public string PasswordHash { get; set; } = null!;
+        public string Role { get; set; } = "Student";
         public DateTime CreatedAt { get; set; } = DateTime.Now;
     }
 }

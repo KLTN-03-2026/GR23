@@ -1,6 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using AILEXBA_Project.Data;
+﻿using AILEXBA_Project.Data;
+using AILEXBA_Project.DTOs;
 using AILEXBA_Project.Models;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Threading.Tasks;
 
@@ -17,12 +18,30 @@ namespace AILEXBA_Project.Controllers
             _context = context;
         }
 
-        // PB09: Lấy danh sách đề thi cho Người dùng & Admin
+        #region --- QUẢN LÝ ĐỀ THI (ADMIN & USER) ---
+
+        // PB09: Lấy danh sách tất cả đề thi
         [HttpGet]
         public async Task<IActionResult> GetExams()
         {
             var exams = await _context.Exams.ToListAsync();
             return Ok(exams);
+        }
+
+        // PB09: Tìm kiếm và Lọc đề thi theo Môn học hoặc Tiêu đề
+        [HttpGet("search")]
+        public async Task<IActionResult> SearchExams([FromQuery] int? subjectId, [FromQuery] string? title)
+        {
+            var query = _context.Exams.AsQueryable();
+
+            if (subjectId.HasValue)
+                query = query.Where(e => e.SubjectId == subjectId);
+
+            if (!string.IsNullOrEmpty(title))
+                query = query.Where(e => e.Title.Contains(title));
+
+            var results = await query.ToListAsync();
+            return Ok(results);
         }
 
         // PB16: Admin tạo mới đề thi
@@ -60,5 +79,92 @@ namespace AILEXBA_Project.Controllers
             await _context.SaveChangesAsync();
             return Ok(new { message = "Xóa đề thi thành công!" });
         }
+
+        #endregion
+
+        #region --- LOGIC THI VÀ KẾT QUẢ ---
+
+        // PB11: Nộp bài thi và Chấm điểm tự động
+        [HttpPost("submit")]
+        public async Task<IActionResult> SubmitExam([FromBody] SubmitExamRequest request)
+        {
+            // 1. Xử lý trường hợp nộp bài trắng (Edge Case)
+            if (request.Answers == null || !request.Answers.Any())
+            {
+                var zeroResult = new ExamResult
+                {
+                    UserId = request.UserId,
+                    ExamId = request.ExamId,
+                    Score = 0,
+                    CorrectAnswers = 0,
+                    TotalQuestions = 0
+                };
+                _context.ExamResults.Add(zeroResult);
+                await _context.SaveChangesAsync();
+                return Ok(new { Message = "Bạn đã nộp bài trắng!", Score = 0, Correct = 0 });
+            }
+
+            // 2. Lấy thông tin đề thi kèm đáp án đúng
+            var exam = await _context.Exams
+                .Include(e => e.Questions)
+                    .ThenInclude(q => q.Answers)
+                .FirstOrDefaultAsync(e => e.Id == request.ExamId);
+
+            if (exam == null) return NotFound("Không tìm thấy đề thi!");
+
+            int correctCount = 0;
+            int total = exam.Questions.Count;
+
+            // 3. Chấm điểm logic
+            foreach (var userAnswer in request.Answers)
+            {
+                var question = exam.Questions.FirstOrDefault(q => q.Id == userAnswer.QuestionId);
+                if (question != null)
+                {
+                    // So khớp Id đáp án đã chọn với bảng Answers (IsCorrect == true)
+                    var isCorrect = question.Answers.Any(a => a.Id == userAnswer.SelectedAnswerId && a.IsCorrect);
+                    if (isCorrect) correctCount++;
+                }
+            }
+
+            // 4. Tính điểm hệ 10
+            double finalScore = total > 0 ? Math.Round(((double)correctCount / total) * 10, 2) : 0;
+
+            // 5. Lưu kết quả vào Database
+            var result = new ExamResult
+            {
+                UserId = request.UserId,
+                ExamId = request.ExamId,
+                Score = finalScore,
+                CorrectAnswers = correctCount,
+                TotalQuestions = total
+            };
+
+            _context.ExamResults.Add(result);
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                Message = "Nộp bài thành công!",
+                Score = finalScore,
+                Correct = correctCount,
+                Total = total
+            });
+        }
+
+        // PB14: Xem lịch sử thi của sinh viên
+        [HttpGet("history/{userId}")]
+        public async Task<IActionResult> GetExamHistory(int userId)
+        {
+            var history = await _context.ExamResults
+                .Where(r => r.UserId == userId)
+                .Include(r => r.Exam)
+                .OrderByDescending(r => r.CompletedAt)
+                .ToListAsync();
+
+            return Ok(history);
+        }
+
+        #endregion
     }
 }

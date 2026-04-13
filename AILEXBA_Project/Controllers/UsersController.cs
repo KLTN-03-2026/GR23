@@ -3,9 +3,8 @@ using AILEXBA_Project.Data;
 using AILEXBA_Project.Models;
 using AILEXBA_Project.DTOs;
 using Microsoft.EntityFrameworkCore;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
+using System.Linq;
 
 namespace AILEXBA_Project.Controllers
 {
@@ -20,13 +19,15 @@ namespace AILEXBA_Project.Controllers
             _context = context;
         }
 
-        // PB08: Quản lý thông tin cá nhân - Xem Profile
+        // PB08: Xem thông tin cá nhân (Profile)
         [HttpGet("{id}")]
         public async Task<IActionResult> GetProfile(int id)
         {
             var user = await _context.Users.FindAsync(id);
-            if (user == null) return NotFound(new { message = "Không tìm thấy người dùng." });
+            if (user == null)
+                return NotFound(new { message = "Không tìm thấy người dùng." });
 
+            // Trả về object mới để không lộ PasswordHash
             return Ok(new
             {
                 id = user.Id,
@@ -36,14 +37,17 @@ namespace AILEXBA_Project.Controllers
             });
         }
 
-        // PB08: Quản lý thông tin cá nhân - Cập nhật Profile
+        // PB08: Cập nhật thông tin cá nhân
         [HttpPut("{id}/profile")]
         public async Task<IActionResult> UpdateProfile(int id, [FromBody] UpdateProfileRequest request)
         {
             var user = await _context.Users.FindAsync(id);
-            if (user == null) return NotFound(new { message = "Không tìm thấy người dùng." });
+            if (user == null)
+                return NotFound(new { message = "Không tìm thấy người dùng." });
 
             user.FullName = request.FullName;
+            // Nếu Quốc muốn cho đổi Email thì thêm dòng dưới, nhưng thường email dùng làm tài khoản nên ít khi đổi
+            // user.Email = request.Email; 
 
             _context.Users.Update(user);
             await _context.SaveChangesAsync();
@@ -51,7 +55,22 @@ namespace AILEXBA_Project.Controllers
             return Ok(new { message = "Cập nhật thông tin thành công!" });
         }
 
-        // PB17: Quản lý người dùng - Danh sách cho Admin
+        // PB08: Đổi mật khẩu (Tính năng cộng thêm cho Sprint 2)
+        [HttpPut("{id}/change-password")]
+        public async Task<IActionResult> ChangePassword(int id, [FromBody] ChangePasswordRequest request)
+        {
+            var user = await _context.Users.FindAsync(id);
+            if (user == null) return NotFound();
+
+            // Lưu ý: Ở đây Quốc nên dùng thư viện BCrypt hoặc Identity để kiểm tra và hash mật khẩu nhé
+            // Đây là bản đơn giản để Quốc chạy luồng logic trước:
+            user.PasswordHash = request.NewPassword;
+
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Đổi mật khẩu thành công!" });
+        }
+
+        // PB17: Quản lý người dùng - Admin lấy danh sách (Không lấy Pass)
         [HttpGet]
         public async Task<IActionResult> GetAllUsers()
         {
@@ -67,7 +86,8 @@ namespace AILEXBA_Project.Controllers
         public async Task<IActionResult> DeleteUser(int id)
         {
             var user = await _context.Users.FindAsync(id);
-            if (user == null) return NotFound(new { message = "Người dùng không tồn tại." });
+            if (user == null)
+                return NotFound(new { message = "Người dùng không tồn tại." });
 
             _context.Users.Remove(user);
             await _context.SaveChangesAsync();

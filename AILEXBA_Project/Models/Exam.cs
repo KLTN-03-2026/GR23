@@ -15,11 +15,10 @@ namespace AILEXBA_Project.Models
         public int SubjectId { get; set; }
 
         [Required]
-        public int DurationMinutes { get; set; } // Thời gian làm bài (PB10)
+        public int DurationMinutes { get; set; } 
 
         public DateTime CreatedAt { get; set; } = DateTime.Now;
-
-        // Trạng thái sử dụng (PB16)
         public bool IsActive { get; set; } = true;
+        public virtual List<Question> Questions { get; set; } = new List<Question>();
     }
 }
