@@ -1,5 +1,5 @@
-🚀 AILEXBA - Backend API
-Dự án Backend cung cấp hệ thống API nền tảng cho AILEXBA - Hệ thống quản lý học sinh và ngân hàng đề thi thông minh tích hợp AI.
+🚀 AILEXBA 
+Dự án  cung cấp hệ thống nền tảng cho AILEXBA - Hệ thống quản lý học sinh và ngân hàng đề thi thông minh tích hợp AI.
 
 🛠️ Công nghệ & Kiến trúc
 Framework: .NET 8.0 (ASP.NET Core Web API)
