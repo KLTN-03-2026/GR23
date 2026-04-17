@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization; 
 
-namespace AILEXBA_Project.Models
+namespace alilexba_backend.Models
 {
     public class ExamResult
     {

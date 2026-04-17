@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace AILEXBA_Project.Models
+namespace alilexba_backend.Models
 {
     public class Exam
     {

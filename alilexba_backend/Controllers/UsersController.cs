@@ -1,12 +1,12 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using AILEXBA_Project.Data;
-using AILEXBA_Project.Models;
-using AILEXBA_Project.DTOs;
+using alilexba_backend.Data;
+using alilexba_backend.Models;
+using alilexba_backend.DTOs;
 using Microsoft.EntityFrameworkCore;
 using System.Threading.Tasks;
 using System.Linq;
 
-namespace AILEXBA_Project.Controllers
+namespace alilexba_backend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]

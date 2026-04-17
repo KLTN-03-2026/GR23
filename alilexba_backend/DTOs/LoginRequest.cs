@@ -1,9 +1,9 @@
-﻿namespace AILEXBA_Project.DTOs
+﻿namespace alilexba_backend.DTOs
 {
-    public class RegisterRequest
+    public class LoginRequest
     {
-        public string FullName { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
+
     }
 }

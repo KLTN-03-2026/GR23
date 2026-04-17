@@ -1,4 +1,4 @@
-﻿namespace AILEXBA_Project.DTOs
+﻿namespace alilexba_backend.DTOs
 {
     public class UpdateProfileRequest
     {

@@ -1,12 +1,12 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using AILEXBA_Project.Data;
-using AILEXBA_Project.Models;
+using alilexba_backend.Data;
+using alilexba_backend.Models;
 using System.Threading.Tasks;
 using MiniExcelLibs; // Thư viện xử lý Excel
 using System.IO;
 
-namespace AILEXBA_Project.Controllers
+namespace alilexba_backend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]

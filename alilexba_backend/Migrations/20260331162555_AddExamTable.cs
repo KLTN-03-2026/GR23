@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace AILEXBA_Project.Migrations
+namespace alilexba_backend.Migrations
 {
     /// <inheritdoc />
     public partial class AddExamTable : Migration

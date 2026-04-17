@@ -2,7 +2,7 @@ import axios, { AxiosError } from 'axios';
 
 const API_URL = 'https://localhost:7083/api/Auth';
 
-// --- ĐỊNH NGHĨA INTERFACES (Để hết lỗi ESLint any) ---
+// --- ĐỊNH NGHĨA INTERFACES ---
 export interface RegisterData {
   fullName?: string;
   email?: string;
@@ -15,7 +15,7 @@ export interface LoginData {
 }
 
 export interface UserData {
-  userId: number;   // Phải là userId để khớp với Backend
+  userId: number;   
   fullName: string;
   role: string;
   email?: string;
@@ -38,39 +38,46 @@ export const authService = {
     }
   },
 
-  // 2. ĐĂNG NHẬP (Phần Quốc đang cần nhất)
- login: async (data: LoginData) => {
+  // 2. ĐĂNG NHẬP
+  login: async (data: LoginData) => {
   try {
     const response = await axios.post(`${API_URL}/login`, data);
+    const resData = response.data;
     
-    // Soi đúng vào object "user" mà bạn vừa gửi
-    const serverData = response.data; // Đây là cái JSON { message, user: { id, ... } }
-    
-    if (serverData && serverData.user) {
-      const user = serverData.user;
-      
-      // CHUẨN HÓA DỮ LIỆU: Đổi 'id' thành 'userId' để khớp với interface UserData của FE
-      const userDataForStorage = {
-        userId: user.id,
-        fullName: user.fullName,
-        email: user.email,
-        role: user.role,
-        token: serverData.token // Nếu sau này có token thì lưu luôn
+    console.log("Dữ liệu thực tế từ BE:", resData);
+
+    // 1. Kiểm tra xem dữ liệu là kiểu PHẲNG (như hình bạn gửi) hay kiểu BỌC (như cũ)
+    // Ưu tiên lấy trực tiếp từ resData, nếu không có thì tìm trong resData.user
+    const finalId = resData.userId || resData.id || resData.user?.id || resData.user?.userId;
+    const finalFullName = resData.fullName || resData.user?.fullName;
+    const finalRole = resData.role || resData.user?.role;
+    const finalEmail = resData.email || resData.user?.email;
+
+    if (finalId) {
+      const userData: UserData = {
+        userId: finalId,
+        fullName: finalFullName || "Người dùng",
+        role: finalRole || "Student",
+        email: finalEmail || "",
+        token: resData.token || resData.user?.token || ""
       };
 
-      // Lưu vào LocalStorage
-      localStorage.setItem('user', JSON.stringify(userDataForStorage));
-      
-      console.log(">>> Đã khớp lệnh! Đăng nhập thành công cho:", user.fullName);
-      return userDataForStorage; 
+      localStorage.setItem('user', JSON.stringify(userData));
+      console.log(">>> Đã khớp lệnh! Đăng nhập thành công.");
+      return userData;
+    } else {
+      console.error(">>> Không tìm thấy ID trong dữ liệu trả về:", resData);
+      throw new Error("Lỗi cấu trúc dữ liệu từ máy chủ");
     }
-    
-    throw new Error("Cấu trúc phản hồi từ Server không đúng!");
   } catch (error: unknown) {
-    const axiosError = error as AxiosError<ErrorResponse>;
-    throw axiosError.response?.data?.message || 'Email hoặc mật khẩu không đúng!';
+    if (axios.isAxiosError(error)) {
+      const axiosError = error as AxiosError<ErrorResponse>;
+      throw axiosError.response?.data?.message || "Email hoặc mật khẩu không đúng!";
+    }
+    throw error instanceof Error ? error.message : "Lỗi hệ thống!";
   }
 },
+
   // 3. ĐĂNG XUẤT
   logout: () => {
     if (typeof window !== 'undefined') {

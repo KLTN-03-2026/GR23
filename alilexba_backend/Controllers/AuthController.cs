@@ -1,11 +1,11 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using AILEXBA_Project.Data;
-using AILEXBA_Project.Models;
-using AILEXBA_Project.DTOs;
+using alilexba_backend.Data;
+using alilexba_backend.Models;
+using alilexba_backend.DTOs;
 using Microsoft.EntityFrameworkCore;
 using System.Threading.Tasks;
 
-namespace AILEXBA_Project.Controllers
+namespace alilexba_backend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
@@ -56,11 +56,14 @@ namespace AILEXBA_Project.Controllers
             // TRẢ VỀ DỮ LIỆU PHẲNG: Để Frontend (authService.login) nhận được đúng tên trường
             return Ok(new
             {
-                userId = user.Id, // Đổi từ "id" thành "userId" cho khớp với Interface UserData ở FE
-                fullName = user.FullName,
-                email = user.Email,
-                role = user.Role,
-                message = "Đăng nhập thành công!"
+                message = "Đăng nhập thành công!",
+                user = new
+                {
+                    id = user.Id,
+                    fullName = user.FullName,
+                    email = user.Email,
+                    role = user.Role
+                }
             });
         }
 

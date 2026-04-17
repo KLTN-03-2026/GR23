@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using AILEXBA_Project.Models;
+using alilexba_backend.Models;
 
-namespace AILEXBA_Project.Data
+namespace alilexba_backend.Data
 {
     public class ApplicationDbContext : DbContext
     {
