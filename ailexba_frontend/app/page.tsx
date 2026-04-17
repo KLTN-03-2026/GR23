@@ -1,6 +1,19 @@
+'use client';
+
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
 
 export default function HomePage() {
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    const currentUser = localStorage.getItem('user');
+
+    if (currentUser) {
+      setUser(JSON.parse(currentUser));
+    }
+  }, []);
+
   const sampleExams = [
     { id: 1, name: 'Đề Toán THPTQG 2026', subject: 'Toán', time: '90 Phút', level: 'Khó' },
     { id: 2, name: 'Đề Tiếng Anh THPTQG 2026', subject: 'Anh', time: '60 Phút', level: 'Trung bình' },
@@ -27,12 +40,14 @@ export default function HomePage() {
         </p>
 
         <div className="flex justify-center gap-4 pt-4">
-          <Link
-            href="/register"
-            className="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold rounded-full hover:scale-105 transition shadow-lg"
-          >
-            Bắt đầu ngay
-          </Link>
+          {!user && (
+            <Link
+              href="/register"
+              className="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold rounded-full hover:scale-105 transition shadow-lg"
+            >
+              Bắt đầu ngay
+            </Link>
+          )}
 
           <Link
             href="/about"
@@ -93,7 +108,7 @@ export default function HomePage() {
                   <span>📊 {exam.level}</span>
                 </div>
 
-                <Link href="">
+                <Link href="/exams">
                   <button className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:opacity-90">
                     Làm thử ngay
                   </button>
@@ -106,22 +121,24 @@ export default function HomePage() {
       </section>
 
       {/* CTA */}
-      <section className="text-center space-y-6 fade-up">
-        <h2 className="text-3xl font-bold">
-          Sẵn sàng chinh phục kỳ thi?
-        </h2>
+      {!user && (
+        <section className="text-center space-y-6 fade-up">
+          <h2 className="text-3xl font-bold">
+            Sẵn sàng chinh phục kỳ thi?
+          </h2>
 
-        <p className="text-slate-400">
-          Bắt đầu ngay hôm nay để nâng cao điểm số.
-        </p>
+          <p className="text-slate-400">
+            Bắt đầu ngay hôm nay để nâng cao điểm số.
+          </p>
 
-        <Link
-          href="/register"
-          className="inline-block px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-full font-bold hover:scale-105 transition shadow-lg"
-        >
-          Đăng ký miễn phí
-        </Link>
-      </section>
+          <Link
+            href="/register"
+            className="inline-block px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-full font-bold hover:scale-105 transition shadow-lg"
+          >
+            Đăng ký miễn phí
+          </Link>
+        </section>
+      )}
 
     </div>
   );

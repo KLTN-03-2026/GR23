@@ -1,187 +1,382 @@
 'use client';
-
-import React, { useState, ChangeEvent, useEffect, useCallback } from 'react';
-import axios from 'axios';
-import BulkUpload from '../../components/BulkUpload';
-
-// 1. Interface chuẩn hóa để "chống" mọi kiểu đặt tên của Backend
-interface Answer {
-  id?: number;
-  text?: string;       // camelCase
-  Text?: string;       // PascalCase
-  isCorrect?: boolean;
-  IsCorrect?: boolean;
-}
+import { useEffect, useState } from 'react';
 
 interface Question {
   id: number;
-  content?: string;    // camelCase
-  Content?: string;    // PascalCase
-  answers?: Answer[];  // camelCase
-  Answers?: Answer[];  // PascalCase
-}
-
-interface NewQuestionState {
   content: string;
-  option1: string;
-  option2: string;
-  option3: string;
-  option4: string;
+  options: string[];
   correct: string;
+  subject?: string;
+  level?: string;
 }
 
 export default function QuestionsPage() {
   const [questions, setQuestions] = useState<Question[]>([]);
-  const [showForm, setShowForm] = useState<boolean>(false);
-  const [subjectId] = useState<number>(1); 
-  
-  const [newQuestion, setNewQuestion] = useState<NewQuestionState>({
-    content: '', option1: '', option2: '', option3: '', option4: '', correct: ''
+  const [filteredQuestions, setFilteredQuestions] = useState<Question[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+
+  const [showForm, setShowForm] = useState(false);
+  const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
+
+  const [newQuestion, setNewQuestion] = useState({
+    content: '',
+    option1: '',
+    option2: '',
+    option3: '',
+    option4: '',
+    correct: '',
+    subject: '',
+    level: 'Dễ'
   });
 
-  const fetchQuestions = useCallback(async () => {
-    try {
-      const res = await axios.get('https://localhost:7083/api/Questions');
-      if (res.data) {
-        setQuestions(res.data);
-      }
-    } catch (err) {
-      console.error("Lỗi khi load câu hỏi:", err);
-    }
+  useEffect(() => {
+    loadQuestions();
   }, []);
 
   useEffect(() => {
-    let isMounted = true;
-    const loadData = async () => {
-      if (isMounted) await fetchQuestions();
-    };
-    loadData();
-    return () => { isMounted = false; };
-  }, [fetchQuestions]);
+    const keyword = search.toLowerCase();
 
-  const handleInputChange = (e: ChangeEvent<HTMLInputElement>, field: keyof NewQuestionState) => {
-    setNewQuestion({ ...newQuestion, [field]: e.target.value });
+    const filtered = questions.filter(
+      (q) =>
+        q.content.toLowerCase().includes(keyword) ||
+        q.subject?.toLowerCase().includes(keyword) ||
+        q.level?.toLowerCase().includes(keyword)
+    );
+
+    setFilteredQuestions(filtered);
+  }, [search, questions]);
+
+  const loadQuestions = async () => {
+    try {
+      const response = await fetch('https://localhost:7083/api/Questions');
+      const result = await response.json();
+
+      setQuestions(result);
+      setFilteredQuestions(result);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleAdd = () => {
-    if (!newQuestion.content || !newQuestion.correct) return;
-    const manualAnswers: Answer[] = [
-      { text: newQuestion.option1, isCorrect: newQuestion.correct === newQuestion.option1 },
-      { text: newQuestion.option2, isCorrect: newQuestion.correct === newQuestion.option2 },
-      { text: newQuestion.option3, isCorrect: newQuestion.correct === newQuestion.option3 },
-      { text: newQuestion.option4, isCorrect: newQuestion.correct === newQuestion.option4 },
-    ];
-    const newQ: Question = {
-      id: Date.now(),
+  const resetForm = () => {
+    setNewQuestion({
+      content: '',
+      option1: '',
+      option2: '',
+      option3: '',
+      option4: '',
+      correct: '',
+      subject: '',
+      level: 'Dễ'
+    });
+  };
+
+  const handleOpenCreate = () => {
+    setEditingQuestion(null);
+    resetForm();
+    setShowForm(true);
+  };
+
+  const handleOpenEdit = (question: Question) => {
+    setEditingQuestion(question);
+
+    setNewQuestion({
+      content: question.content,
+      option1: question.options[0] || '',
+      option2: question.options[1] || '',
+      option3: question.options[2] || '',
+      option4: question.options[3] || '',
+      correct: question.correct,
+      subject: question.subject || '',
+      level: question.level || 'Dễ'
+    });
+
+    setShowForm(true);
+  };
+
+  const handleSave = async () => {
+    const payload = {
       content: newQuestion.content,
-      answers: manualAnswers,
+      options: [
+        newQuestion.option1,
+        newQuestion.option2,
+        newQuestion.option3,
+        newQuestion.option4
+      ].filter(Boolean),
+      correct: newQuestion.correct,
+      subject: newQuestion.subject,
+      level: newQuestion.level
     };
-    setQuestions([newQ, ...questions]);
-    setShowForm(false);
-    setNewQuestion({ content: '', option1: '', option2: '', option3: '', option4: '', correct: '' });
+
+    try {
+      if (editingQuestion) {
+        await fetch(`https://localhost:7083/api/Questions/${editingQuestion.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+      } else {
+        await fetch('https://localhost:7083/api/Questions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+      }
+
+      setShowForm(false);
+      loadQuestions();
+    } catch (error) {
+      console.error(error);
+      alert('Lưu câu hỏi thất bại');
+    }
   };
 
-  const handleDelete = (id: number) => {
-    if(confirm("Quốc có chắc muốn xoá câu hỏi này?")) {
-      setQuestions(prev => prev.filter(q => q.id !== id));
+  const handleDelete = async (id: number) => {
+    const confirmDelete = confirm('Bạn có chắc muốn xóa câu hỏi này?');
+    if (!confirmDelete) return;
+
+    try {
+      await fetch(`https://localhost:7083/api/Questions/${id}`, {
+        method: 'DELETE'
+      });
+
+      setQuestions((prev) => prev.filter((q) => q.id !== id));
+      setFilteredQuestions((prev) => prev.filter((q) => q.id !== id));
+    } catch (error) {
+      console.error(error);
+      alert('Xóa câu hỏi thất bại');
     }
   };
 
   return (
-    <div className="max-w-6xl mx-auto p-6 space-y-8 text-slate-100 min-h-screen">
-      
-      {/* HEADER */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 border-b border-white/10 pb-8">
+    <div className="relative max-w-7xl mx-auto px-6 py-10">
+
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-blue-500/10 blur-[120px] rounded-full -z-10"></div>
+
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-5 mb-8">
         <div>
-          <h1 className="text-4xl font-black text-white tracking-tighter uppercase font-sans">🚀 Ngân hàng câu hỏi</h1>
-          <p className="text-slate-500 font-medium mt-1">Dự án <span className="text-blue-500 font-bold">AILEXBA</span> | Duy Tan University</p>
+          <h1 className="text-4xl font-extrabold mb-2">
+            Quản lý câu hỏi
+          </h1>
+          <p className="text-slate-400">
+            Thêm, sửa và quản lý toàn bộ câu hỏi trong hệ thống
+          </p>
         </div>
-        
-        <div className="flex items-center gap-4">
-          <BulkUpload subjectId={subjectId} onRefresh={fetchQuestions} />
+
+        <div className="flex gap-3">
+          <input
+            type="text"
+            placeholder="Tìm kiếm câu hỏi..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-[300px] px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+          />
+
           <button
-            onClick={() => setShowForm(true)}
-            className="px-6 py-3 bg-blue-600 rounded-2xl text-white font-black hover:bg-blue-500 transition-all text-xs uppercase shadow-xl shadow-blue-900/40"
+            onClick={handleOpenCreate}
+            className="px-5 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl text-white font-bold hover:opacity-90 hover:scale-105 transition"
           >
-            + Thêm thủ công
+            + Thêm câu hỏi
           </button>
         </div>
       </div>
 
-      {/* DANH SÁCH CÂU HỎI */}
-      <div className="grid gap-6">
-        {questions.length === 0 ? (
-          <div className="text-center py-32 bg-white/[0.02] border border-dashed border-white/10 rounded-[2rem]">
-            <p className="text-slate-400 italic text-lg">Hệ thống đang rỗng. Hãy thử tải lên file Excel!</p>
-          </div>
-        ) : (
-          questions.map((q, index) => {
-            // Lấy nội dung câu hỏi (chấp cả Content và content)
-            const qContent = q.content ?? q.Content ?? "Nội dung câu hỏi bị trống";
-            // Lấy mảng đáp án
-            const currentAnswers = q.answers || q.Answers || [];
-            
-            return (
-              <div key={q.id} className="bg-slate-900/50 border border-white/5 backdrop-blur-xl rounded-[2rem] p-8 shadow-2xl group hover:border-blue-500/30 transition-all">
-                <div className="flex justify-between items-start gap-4 mb-6">
-                  <h3 className="text-xl font-bold text-slate-100 leading-relaxed">
-                    <span className="text-blue-500 mr-2 font-black">CÂU {index + 1}:</span> 
-                    {qContent}
-                  </h3>
-                  <button onClick={() => handleDelete(q.id)} className="px-4 py-2 bg-red-500/10 text-red-500 rounded-xl font-bold text-[10px] uppercase hover:bg-red-500 hover:text-white transition-all">
-                    Xoá
-                  </button>
-                </div>
+      {loading ? (
+        <div className="flex justify-center py-20">
+          <div className="w-14 h-14 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      ) : filteredQuestions.length === 0 ? (
+        <div className="text-center py-20 bg-white/5 border border-white/10 rounded-3xl">
+          <div className="text-6xl mb-4">📚</div>
+          <h2 className="text-2xl font-bold mb-2">
+            Chưa có câu hỏi nào
+          </h2>
+          <p className="text-slate-400">
+            Hãy thêm câu hỏi đầu tiên cho hệ thống
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-5">
+          {filteredQuestions.map((q, index) => (
+            <div
+              key={q.id}
+              className="bg-white/5 border border-white/10 backdrop-blur-md rounded-3xl p-6 shadow-xl hover:bg-white/10 transition"
+            >
+              <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-5">
 
-                <ul className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {currentAnswers.map((opt, i) => {
-                    const isCorrect = opt.isCorrect ?? opt.IsCorrect;
-                    const text = opt.text ?? opt.Text ?? "Trống";
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-3 flex-wrap">
+                    <span className="px-3 py-1 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 text-sm">
+                      Câu {index + 1}
+                    </span>
 
-                    return (
-                      <li 
-                        key={`${q.id}-${i}`}
-                        className={`p-5 rounded-2xl border flex items-center gap-4 transition-all ${
-                          isCorrect 
-                          ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-400 ring-1 ring-emerald-500/20 shadow-[0_0_20px_rgba(16,185,129,0.1)]' 
-                          : 'bg-white/5 border-white/5 text-slate-400'
+                    {q.subject && (
+                      <span className="px-3 py-1 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20 text-sm">
+                        {q.subject}
+                      </span>
+                    )}
+
+                    {q.level && (
+                      <span className="px-3 py-1 rounded-full bg-green-500/10 text-green-400 border border-green-500/20 text-sm">
+                        {q.level}
+                      </span>
+                    )}
+                  </div>
+
+                  <p className="font-semibold text-xl mb-4 text-white">
+                    {q.content}
+                  </p>
+
+                  <div className="grid md:grid-cols-2 gap-3">
+                    {q.options.map((opt) => (
+                      <div
+                        key={opt}
+                        className={`p-3 rounded-xl border ${
+                          opt === q.correct
+                            ? 'bg-green-500/10 border-green-500/20 text-green-400'
+                            : 'bg-white/5 border-white/10 text-slate-300'
                         }`}
                       >
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-black shadow-md ${
-                          isCorrect ? 'bg-emerald-500 text-white' : 'bg-slate-700 text-slate-500'
-                        }`}>
-                          {String.fromCharCode(65 + i)}
-                        </div>
-                        <span className="font-semibold">{text}</span>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            );
-          })
-        )}
-      </div>
+                        {opt}
+                      </div>
+                    ))}
+                  </div>
+                </div>
 
-      {/* MODAL FORM */}
+                <div className="flex md:flex-col gap-3">
+                  <button
+                    onClick={() => handleOpenEdit(q)}
+                    className="px-4 py-2 rounded-xl bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 hover:bg-yellow-500/20 transition"
+                  >
+                    Sửa
+                  </button>
+
+                  <button
+                    onClick={() => handleDelete(q.id)}
+                    className="px-4 py-2 rounded-xl bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition"
+                  >
+                    Xóa
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
       {showForm && (
-        <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 backdrop-blur-md p-4">
-          <div className="bg-slate-900 border border-white/10 p-10 rounded-[2.5rem] w-full max-w-lg space-y-6 shadow-2xl animate-in fade-in zoom-in duration-300">
-              <h2 className="text-2xl font-black text-white uppercase text-center tracking-tighter">Tạo câu hỏi mới</h2>
-              <div className="space-y-4">
-                 <input placeholder="Nội dung câu hỏi" value={newQuestion.content} onChange={e => handleInputChange(e, 'content')} className="w-full p-4 rounded-2xl bg-white/5 border border-white/10 outline-none text-white focus:border-blue-500" />
-                 <div className="grid grid-cols-2 gap-3">
-                    <input placeholder="Đáp án A" value={newQuestion.option1} onChange={e => handleInputChange(e, 'option1')} className="p-4 rounded-2xl bg-white/5 border border-white/10 text-white" />
-                    <input placeholder="Đáp án B" value={newQuestion.option2} onChange={e => handleInputChange(e, 'option2')} className="p-4 rounded-2xl bg-white/5 border border-white/10 text-white" />
-                    <input placeholder="Đáp án C" value={newQuestion.option3} onChange={e => handleInputChange(e, 'option3')} className="p-4 rounded-2xl bg-white/5 border border-white/10 text-white" />
-                    <input placeholder="Đáp án D" value={newQuestion.option4} onChange={e => handleInputChange(e, 'option4')} className="p-4 rounded-2xl bg-white/5 border border-white/10 text-white" />
-                 </div>
-                 <input placeholder="Nhập đáp án đúng (copy từ 1 trong 4 ô trên)" value={newQuestion.correct} onChange={e => handleInputChange(e, 'correct')} className="w-full p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 outline-none text-emerald-400 font-bold" />
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 px-4">
+          <div className="w-full max-w-2xl bg-slate-900 border border-white/10 rounded-3xl p-8 shadow-2xl max-h-[90vh] overflow-y-auto">
+
+            <h2 className="text-2xl font-bold mb-6">
+              {editingQuestion ? 'Sửa câu hỏi' : 'Thêm câu hỏi'}
+            </h2>
+
+            <div className="space-y-4">
+
+              <textarea
+                placeholder="Nội dung câu hỏi"
+                value={newQuestion.content}
+                onChange={(e) =>
+                  setNewQuestion({ ...newQuestion, content: e.target.value })
+                }
+                className="w-full p-4 rounded-xl bg-white/5 border border-white/10 text-white min-h-[100px]"
+              />
+
+              <div className="grid md:grid-cols-2 gap-4">
+                <input
+                  placeholder="Đáp án 1"
+                  value={newQuestion.option1}
+                  onChange={(e) =>
+                    setNewQuestion({ ...newQuestion, option1: e.target.value })
+                  }
+                  className="w-full p-3 rounded-xl bg-white/5 border border-white/10 text-white"
+                />
+
+                <input
+                  placeholder="Đáp án 2"
+                  value={newQuestion.option2}
+                  onChange={(e) =>
+                    setNewQuestion({ ...newQuestion, option2: e.target.value })
+                  }
+                  className="w-full p-3 rounded-xl bg-white/5 border border-white/10 text-white"
+                />
+
+                <input
+                  placeholder="Đáp án 3"
+                  value={newQuestion.option3}
+                  onChange={(e) =>
+                    setNewQuestion({ ...newQuestion, option3: e.target.value })
+                  }
+                  className="w-full p-3 rounded-xl bg-white/5 border border-white/10 text-white"
+                />
+
+                <input
+                  placeholder="Đáp án 4"
+                  value={newQuestion.option4}
+                  onChange={(e) =>
+                    setNewQuestion({ ...newQuestion, option4: e.target.value })
+                  }
+                  className="w-full p-3 rounded-xl bg-white/5 border border-white/10 text-white"
+                />
               </div>
-              <div className="flex gap-4">
-                 <button onClick={() => setShowForm(false)} className="flex-1 py-4 rounded-2xl bg-white/5 font-bold hover:bg-white/10 transition-all text-white">HUỶ</button>
-                 <button onClick={handleAdd} className="flex-1 py-4 rounded-2xl bg-blue-600 font-black hover:bg-blue-500 transition-all text-white shadow-lg shadow-blue-900/30">LƯU LẠI</button>
+
+              <input
+                placeholder="Đáp án đúng"
+                value={newQuestion.correct}
+                onChange={(e) =>
+                  setNewQuestion({ ...newQuestion, correct: e.target.value })
+                }
+                className="w-full p-3 rounded-xl bg-white/5 border border-white/10 text-white"
+              />
+
+              <div className="grid md:grid-cols-2 gap-4">
+                <input
+                  placeholder="Môn học"
+                  value={newQuestion.subject}
+                  onChange={(e) =>
+                    setNewQuestion({ ...newQuestion, subject: e.target.value })
+                  }
+                  className="w-full p-3 rounded-xl bg-white/5 border border-white/10 text-white"
+                />
+
+                <select
+                  value={newQuestion.level}
+                  onChange={(e) =>
+                    setNewQuestion({ ...newQuestion, level: e.target.value })
+                  }
+                  className="w-full p-3 rounded-xl bg-white/5 border border-white/10 text-white"
+                >
+                  <option value="Dễ" className="bg-slate-900">Dễ</option>
+                  <option value="Trung bình" className="bg-slate-900">Trung bình</option>
+                  <option value="Khó" className="bg-slate-900">Khó</option>
+                </select>
               </div>
+
+              <div className="flex gap-3 justify-end pt-4">
+                <button
+                  onClick={() => setShowForm(false)}
+                  className="px-5 py-3 bg-white/10 rounded-xl text-white hover:bg-white/20 transition"
+                >
+                  Huỷ
+                </button>
+
+                <button
+                  onClick={handleSave}
+                  className="px-5 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl text-white font-bold hover:opacity-90"
+                >
+                  Lưu câu hỏi
+                </button>
+              </div>
+
+            </div>
           </div>
         </div>
       )}

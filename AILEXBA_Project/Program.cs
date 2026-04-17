@@ -5,24 +5,27 @@ using System.Text.Json.Serialization;
 var builder = WebApplication.CreateBuilder(args);
 
 // 1. Cấu hình SQL Server
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer("Server=(localdb)\\mssqllocaldb;Database=AILEXBA_DB;Trusted_Connection=True;MultipleActiveResultSets=true"));
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
-// 2. Cấu hình CORS
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseSqlServer(connectionString));
+
+// 2. Cấu hình CORS (Mở cửa cho Next.js)
 builder.Services.AddCors(options => {
     options.AddPolicy("AllowReact", policy =>
-        policy.WithOrigins("http://localhost:5173", "http://localhost:3000")
+        policy.WithOrigins("http://localhost:3000") // Cổng mặc định của Next.js
               .AllowAnyMethod()
-              .AllowAnyHeader());
+              .AllowAnyHeader()
+              .AllowCredentials());
 });
 
-// 3. Cấu hình Controllers + Fix lỗi 500 JSON
+// 3. Cấu hình Controllers & Fix lỗi JSON 500
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
-        
+        // Chặn vòng lặp vô tận khi load dữ liệu quan hệ
         options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
-       
+        // Giữ nguyên tên thuộc tính như trong C# (PascalCase) hoặc camelCase tùy Quốc chọn
         options.JsonSerializerOptions.PropertyNamingPolicy = null;
     });
 
@@ -31,13 +34,21 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
+// Cấu hình Pipeline xử lý Request
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
+// THỨ TỰ NÀY LÀ BẮT BUỘC: CORS -> Auth -> Map
 app.UseCors("AllowReact");
-app.UseAuthorization();
+
+app.UseHttpsRedirection(); // Đảm bảo chuyển hướng HTTPS
+
+app.UseAuthentication(); // [QUAN TRỌNG] Xác thực trước
+app.UseAuthorization();  // [QUAN TRỌNG] Phân quyền sau
+
 app.MapControllers();
+
 app.Run();
