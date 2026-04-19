@@ -1,7 +1,7 @@
 ﻿using alilexba_backend.Data;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json.Serialization;
-using System.Text.Json; // Thêm dòng này để dùng JsonNamingPolicy
+using System.Text.Json; 
 
 var builder = WebApplication.CreateBuilder(args);
 
