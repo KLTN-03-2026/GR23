@@ -93,7 +93,7 @@ export default function HomePage() {
               key={exam.id}
               className="relative p-[1px] rounded-3xl bg-gradient-to-r from-blue-500 to-indigo-500 hover:scale-105 transition"
             >
-              <div className="bg-slate-900/80 backdrop-blur-xl rounded-3xl p-6 h-full">
+              <div className="bg-slate-900/80 backdrop-blur-xl rounded-3xl p-6 h-full flex flex-col">
 
                 <div className="absolute top-4 right-4 text-xs bg-blue-500/10 text-blue-400 px-3 py-1 rounded-full">
                   {exam.subject}
@@ -108,11 +108,13 @@ export default function HomePage() {
                   <span>📊 {exam.level}</span>
                 </div>
 
-                <Link href="/exams">
-                  <button className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:opacity-90">
-                    Làm thử ngay
-                  </button>
-                </Link>
+                <div className="mt-auto pt-6">
+                  <Link href="/exams">
+                    <button className="w-full py-4 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold">
+                      Làm thử ngay
+                    </button>
+                  </Link>
+                </div>
 
               </div>
             </div>

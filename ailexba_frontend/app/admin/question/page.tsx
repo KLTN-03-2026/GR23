@@ -1,5 +1,7 @@
 'use client';
+
 const API_URL = 'https://localhost:7083';
+
 import { useEffect, useState } from 'react';
 import { authService } from '@/services/auth.service';
 
@@ -58,11 +60,9 @@ export default function QuestionsPage() {
 
   const loadQuestions = async () => {
     try {
-      const response = await fetch('https://localhost:7083/api/Questions');
+      const response = await fetch(`${API_URL}/api/Questions`);
 
       const text = await response.text();
-
-      console.log(text);
 
       let result: any[] = [];
 
@@ -123,7 +123,7 @@ export default function QuestionsPage() {
         ]
       };
 
-      const response = await fetch('https://localhost:7083/api/Questions', {
+      const response = await fetch(`${API_URL}/api/Questions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -158,7 +158,7 @@ export default function QuestionsPage() {
       excelFormData.append('file', selectedFile);
 
       const response = await fetch(
-        `https://localhost:7083/api/Questions/upload-excel?subjectId=${newQuestion.subjectId}`,
+        `${API_URL}/api/Questions/upload-excel?subjectId=${newQuestion.subjectId}`,
         {
           method: 'POST',
           body: excelFormData
@@ -175,12 +175,14 @@ export default function QuestionsPage() {
       }
 
       alert('Upload Excel thành công');
+      setSelectedFile(null);
       loadQuestions();
     } catch (error) {
       console.error(error);
       alert('Failed to fetch - kiểm tra backend hoặc CORS');
     }
   };
+
   return (
     <div className="relative max-w-7xl mx-auto px-6 py-10">
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-blue-500/10 blur-[120px] rounded-full -z-10"></div>
@@ -195,49 +197,98 @@ export default function QuestionsPage() {
           </p>
         </div>
 
-        <div className="flex gap-3 flex-wrap">
-          <input
-            type="text"
-            placeholder="Tìm kiếm câu hỏi..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-[300px] px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
-          />
+        <div className="flex gap-3 flex-wrap items-center">
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Tìm kiếm câu hỏi..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-[320px] px-5 py-3 rounded-2xl bg-white/10 border border-white/20 shadow-[0_0_0_1px_rgba(255,255,255,0.04)] text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:bg-white/15"
+            />
+          </div>
+
+          <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-white/10 border border-white/20 shadow-[0_0_0_1px_rgba(255,255,255,0.04)]">
+        <div className="flex flex-col">
+          <span className="text-xs text-slate-400">Mã đề</span>
 
           <input
             type="number"
-            placeholder="Mã môn học"
+            min={1}
             value={newQuestion.subjectId}
             onChange={(e) =>
               setNewQuestion({
                 ...newQuestion,
-                subjectId: Number(e.target.value)
+                subjectId: Number(e.target.value) || 1
               })
             }
-            className="w-[150px] px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white"
+            className="w-20 bg-transparent text-white font-semibold outline-none"
           />
+        </div>
 
-          <input
-            type="file"
-            accept=".xlsx,.xls"
-            onChange={(e) => {
-              if (e.target.files && e.target.files.length > 0) {
-                setSelectedFile(e.target.files[0]);
-              }
-            }}
-            className="text-sm text-slate-300"
-          />
+        <div className="flex flex-col gap-1">
+          <button
+            type="button"
+            onClick={() =>
+              setNewQuestion({
+                ...newQuestion,
+                subjectId: newQuestion.subjectId + 1
+              })
+            }
+            className="w-7 h-7 rounded-lg bg-white/10 border border-white/15 text-white hover:bg-white/20 transition"
+          >
+            +
+          </button>
+
+          <button
+            type="button"
+            onClick={() =>
+              setNewQuestion({
+                ...newQuestion,
+                subjectId:
+                  newQuestion.subjectId > 1
+                    ? newQuestion.subjectId - 1
+                    : 1
+              })
+            }
+            className="w-7 h-7 rounded-lg bg-white/10 border border-white/15 text-white hover:bg-white/20 transition"
+          >
+            -
+          </button>
+        </div>
+      </div>
+
+          <label className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-white/10 border border-white/20 shadow-[0_0_0_1px_rgba(255,255,255,0.04)] text-slate-300 cursor-pointer hover:bg-white/15 hover:border-white/30 transition min-w-[280px]">
+            <span className="px-3 py-2 rounded-xl bg-white/10 border border-white/10 text-white text-sm font-medium">
+              Chọn tệp
+            </span>
+
+            <span className="text-sm truncate">
+              {selectedFile ? selectedFile.name : 'Chưa có tệp nào được chọn'}
+            </span>
+
+            <input
+              type="file"
+              accept=".xlsx,.xls"
+              onChange={(e) => {
+                if (e.target.files && e.target.files.length > 0) {
+                  setSelectedFile(e.target.files[0]);
+                }
+              }}
+              className="hidden"
+            />
+          </label>
 
           <button
             onClick={handleUploadExcel}
-            className="px-5 py-3 bg-green-600 rounded-xl text-white font-bold hover:bg-green-700 transition"
+            className="px-5 py-3 bg-green-600 rounded-2xl text-white font-bold hover:bg-green-700 transition border border-green-500/20"
           >
             Upload Excel
           </button>
 
           <button
             onClick={handleOpenCreate}
-            className="px-5 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl text-white font-bold hover:opacity-90 hover:scale-105 transition"
+            className="px-5 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl text-white font-bold hover:opacity-90 hover:scale-105 transition border border-white/10"
           >
             + Thêm câu hỏi
           </button>

@@ -39,6 +39,7 @@ export default function AdminSubjectsPage() {
 
   const fetchSubjects = async () => {
     setLoading(true);
+
     try {
       const res = await axios.get<Subject[]>(API_URL);
       setSubjects(res.data);
@@ -70,9 +71,11 @@ export default function AdminSubjectsPage() {
           id: editId,
           ...formData,
         });
+
         alert("Cập nhật môn học thành công!");
       } else {
         await axios.post(API_URL, formData);
+
         alert("Thêm môn học thành công!");
       }
 
@@ -81,6 +84,7 @@ export default function AdminSubjectsPage() {
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
         const axiosError = err as AxiosError<{ message?: string }>;
+
         alert(
           axiosError.response?.data?.message || "Lỗi thao tác dữ liệu!"
         );
@@ -128,6 +132,7 @@ export default function AdminSubjectsPage() {
               <h1 className="text-4xl font-extrabold text-white">
                 Quản lý môn học
               </h1>
+
               <p className="text-slate-400 mt-1">
                 Quản lý danh sách môn học và dữ liệu liên quan trong hệ thống
               </p>
@@ -137,7 +142,7 @@ export default function AdminSubjectsPage() {
 
         <button
           onClick={fetchSubjects}
-          className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-white/5 border border-white/10 text-slate-200 hover:bg-white/10 transition-all"
+          className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-white/10 border border-white/20 shadow-[0_0_0_1px_rgba(255,255,255,0.05)] text-slate-100 hover:bg-white/15 hover:border-white/30 transition-all"
         >
           <RefreshCcw
             size={18}
@@ -176,7 +181,7 @@ export default function AdminSubjectsPage() {
           animate={{ opacity: 1, y: 0 }}
           className="lg:col-span-4"
         >
-          <div className="bg-white/5 border border-white/10 rounded-3xl backdrop-blur-xl p-6 shadow-2xl sticky top-8">
+          <div className="bg-white/10 border border-white/20 rounded-3xl backdrop-blur-xl p-6 shadow-[0_10px_40px_rgba(0,0,0,0.4)] sticky top-8">
             <div className="flex items-center gap-3 mb-6">
               <div
                 className={`w-14 h-14 rounded-2xl flex items-center justify-center ${
@@ -196,6 +201,7 @@ export default function AdminSubjectsPage() {
                 <h2 className="text-xl font-bold text-white">
                   {editId ? "Cập nhật môn học" : "Thêm môn học"}
                 </h2>
+
                 <p className="text-sm text-slate-400">
                   {editId
                     ? "Chỉnh sửa thông tin môn học"
@@ -218,14 +224,14 @@ export default function AdminSubjectsPage() {
                   onChange={(e) =>
                     setFormData({ name: e.target.value })
                   }
-                  className="w-full px-4 py-4 rounded-2xl bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                  className="w-full px-4 py-4 rounded-2xl bg-white/10 border border-white/20 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:bg-white/15"
                 />
               </div>
 
               <div className="flex gap-3">
                 <button
                   type="submit"
-                  className={`flex-1 py-4 rounded-2xl font-bold text-white transition-all hover:scale-[1.02] ${
+                  className={`flex-1 py-4 rounded-2xl font-bold text-white transition-all hover:scale-[1.02] border border-white/10 ${
                     editId
                       ? "bg-gradient-to-r from-indigo-600 to-blue-600"
                       : "bg-gradient-to-r from-emerald-500 to-green-600"
@@ -238,7 +244,7 @@ export default function AdminSubjectsPage() {
                   <button
                     type="button"
                     onClick={resetForm}
-                    className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-all"
+                    className="w-14 h-14 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center text-slate-300 hover:text-white hover:bg-white/15 hover:border-white/30 transition-all"
                   >
                     <XCircle size={22} />
                   </button>
@@ -254,12 +260,13 @@ export default function AdminSubjectsPage() {
           transition={{ delay: 0.1 }}
           className="lg:col-span-8"
         >
-          <div className="bg-white/5 border border-white/10 rounded-3xl overflow-hidden backdrop-blur-xl shadow-2xl">
-            <div className="p-5 border-b border-white/10 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div className="bg-white/10 border border-white/20 rounded-3xl overflow-hidden backdrop-blur-xl shadow-[0_10px_40px_rgba(0,0,0,0.4)]">
+            <div className="p-5 border-b border-white/20 flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-white/[0.03]">
               <div>
                 <h2 className="text-xl font-bold text-white">
                   Danh sách môn học
                 </h2>
+
                 <p className="text-slate-400 text-sm mt-1">
                   Tổng cộng {filteredSubjects.length} môn học
                 </p>
@@ -276,7 +283,7 @@ export default function AdminSubjectsPage() {
                   placeholder="Tìm kiếm môn học..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-11 pr-4 py-3 rounded-2xl bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                  className="w-full pl-11 pr-4 py-3 rounded-2xl bg-white/10 border border-white/20 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:bg-white/15"
                 />
               </div>
             </div>
@@ -291,9 +298,11 @@ export default function AdminSubjectsPage() {
                   className="mx-auto text-slate-500 mb-4"
                   size={60}
                 />
+
                 <h3 className="text-2xl font-bold text-white mb-2">
                   Không tìm thấy môn học
                 </h3>
+
                 <p className="text-slate-400">
                   Thử tìm kiếm với từ khóa khác
                 </p>
@@ -323,10 +332,10 @@ export default function AdminSubjectsPage() {
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0 }}
-                          className="border-t border-white/10 hover:bg-white/5 transition"
+                          className="border-t border-white/15 hover:bg-white/10 transition"
                         >
                           <td className="px-6 py-5">
-                            <span className="px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-400 font-semibold text-sm">
+                            <span className="px-3 py-1 rounded-full bg-indigo-500/15 border border-indigo-500/20 text-indigo-300 font-semibold text-sm">
                               #{sub.id}
                             </span>
                           </td>
@@ -341,6 +350,7 @@ export default function AdminSubjectsPage() {
                                 <p className="font-semibold text-white text-lg">
                                   {sub.name}
                                 </p>
+
                                 <p className="text-slate-400 text-sm">
                                   Môn học trong hệ thống
                                 </p>
@@ -352,14 +362,14 @@ export default function AdminSubjectsPage() {
                             <div className="flex items-center justify-center gap-3">
                               <button
                                 onClick={() => startEdit(sub)}
-                                className="w-11 h-11 rounded-xl bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition-all flex items-center justify-center"
+                                className="w-11 h-11 rounded-xl bg-blue-500/15 border border-blue-500/20 text-blue-300 hover:bg-blue-500/25 hover:border-blue-500/40 transition-all flex items-center justify-center"
                               >
                                 <Edit2 size={18} />
                               </button>
 
                               <button
                                 onClick={() => handleDelete(sub.id)}
-                                className="w-11 h-11 rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-all flex items-center justify-center"
+                                className="w-11 h-11 rounded-xl bg-red-500/15 border border-red-500/20 text-red-300 hover:bg-red-500/25 hover:border-red-500/40 transition-all flex items-center justify-center"
                               >
                                 <Trash2 size={18} />
                               </button>
@@ -381,7 +391,7 @@ export default function AdminSubjectsPage() {
 
 function StatCard({ title, count, icon, color }: StatCardProps) {
   return (
-    <div className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-xl shadow-xl">
+    <div className="bg-white/10 border border-white/20 rounded-3xl p-6 backdrop-blur-xl shadow-[0_10px_40px_rgba(0,0,0,0.35)] hover:border-white/30 transition-all">
       <div className="flex items-center justify-between mb-5">
         <div
           className={`w-14 h-14 rounded-2xl bg-gradient-to-r ${color} flex items-center justify-center text-white shadow-lg`}
@@ -395,6 +405,7 @@ function StatCard({ title, count, icon, color }: StatCardProps) {
       <h3 className="text-slate-400 text-sm font-medium mb-2">
         {title}
       </h3>
+
       <p className="text-3xl font-extrabold text-white">{count}</p>
     </div>
   );
