@@ -1,10 +1,12 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using alilexba_backend.Data;
-using alilexba_backend.Models;
+﻿using alilexba_backend.Data;
 using alilexba_backend.DTOs;
+using alilexba_backend.Models;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Threading.Tasks;
 using System.Linq;
+using System.Threading.Tasks;
+using BCrypt.Net;
 
 namespace alilexba_backend.Controllers
 {
@@ -60,13 +62,37 @@ namespace alilexba_backend.Controllers
         public async Task<IActionResult> ChangePassword(int id, [FromBody] ChangePasswordRequest request)
         {
             var user = await _context.Users.FindAsync(id);
-            if (user == null) return NotFound();
 
-            // Lưu ý: Ở đây Quốc nên dùng thư viện BCrypt hoặc Identity để kiểm tra và hash mật khẩu nhé
-            // Đây là bản đơn giản để Quốc chạy luồng logic trước:
-            user.PasswordHash = request.NewPassword;
+            if (user == null)
+            {
+                return NotFound(new { message = "Không tìm thấy người dùng." });
+            }
 
+            if (string.IsNullOrWhiteSpace(request.OldPassword))
+            {
+                return BadRequest(new { message = "Vui lòng nhập mật khẩu hiện tại." });
+            }
+
+            if (string.IsNullOrWhiteSpace(request.NewPassword))
+            {
+                return BadRequest(new { message = "Vui lòng nhập mật khẩu mới." });
+            }
+
+            var isOldPasswordCorrect = BCrypt.Net.BCrypt.Verify(
+                request.OldPassword,
+                user.PasswordHash
+            );
+
+            if (!isOldPasswordCorrect)
+            {
+                return BadRequest(new { message = "Mật khẩu hiện tại không đúng." });
+            }
+
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+
+            _context.Users.Update(user);
             await _context.SaveChangesAsync();
+
             return Ok(new { message = "Đổi mật khẩu thành công!" });
         }
 

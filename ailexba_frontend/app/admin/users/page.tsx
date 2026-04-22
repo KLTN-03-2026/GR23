@@ -1,6 +1,5 @@
-// app/admin/users/page.tsx
-
 'use client';
+import { authService } from '@/services/auth.service';
 import { useEffect, useState } from 'react';
 
 interface UserItem {
@@ -26,6 +25,10 @@ export default function UsersPage() {
   });
 
   useEffect(() => {
+    if(!authService.isAdmin()){
+      window.location.href = '/'; 
+    }
+
     const loadUsers = async () => {
       try {
         const response = await fetch('https://localhost:7083/api/Users');

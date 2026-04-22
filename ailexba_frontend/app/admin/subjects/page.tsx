@@ -1,4 +1,5 @@
 "use client";
+
 import { useState, useEffect } from "react";
 import axios, { AxiosError } from "axios";
 import {
@@ -13,10 +14,10 @@ import {
   XCircle,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { authService } from "@/services/auth.service";
 
 const API_URL = "https://localhost:7083/api/Subjects";
 
-// --- ĐỊNH NGHĨA INTERFACES ---
 interface Subject {
   id: number;
   name: string;
@@ -36,7 +37,6 @@ export default function AdminSubjectsPage() {
   const [editId, setEditId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // 1. Lấy danh sách môn học
   const fetchSubjects = async () => {
     setLoading(true);
     try {
@@ -50,52 +50,62 @@ export default function AdminSubjectsPage() {
   };
 
   useEffect(() => {
+    if (!authService.isAdmin()) {
+      window.location.href = "/";
+    }
+
     fetchSubjects();
   }, []);
 
-  // 2. Tìm kiếm môn học
   const filteredSubjects = subjects.filter((s) =>
-    s.name.toLowerCase().includes(searchTerm.toLowerCase()),
+    s.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // 3. Xử lý Thêm hoặc Cập nhật
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     try {
       if (editId) {
-        // Cập nhật (PUT)
-        await axios.put(`${API_URL}/${editId}`, { id: editId, ...formData });
-        alert("Cập nhật thành công!");
+        await axios.put(`${API_URL}/${editId}`, {
+          id: editId,
+          ...formData,
+        });
+        alert("Cập nhật môn học thành công!");
       } else {
-        // Thêm mới (POST)
         await axios.post(API_URL, formData);
         alert("Thêm môn học thành công!");
       }
+
       resetForm();
       fetchSubjects();
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
         const axiosError = err as AxiosError<{ message?: string }>;
-        alert(axiosError.response?.data?.message || "Lỗi thao tác dữ liệu!");
+        alert(
+          axiosError.response?.data?.message || "Lỗi thao tác dữ liệu!"
+        );
       }
     }
   };
 
-  // 4. Xử lý Xóa
   const handleDelete = async (id: number) => {
-    if (confirm("Quốc có chắc muốn xóa môn này không?")) {
-      try {
-        await axios.delete(`${API_URL}/${id}`);
-        fetchSubjects();
-      } catch {
-        alert("Không thể xóa môn học (có thể do ràng buộc dữ liệu)!");
-      }
+    const confirmDelete = confirm(
+      "Bạn có chắc muốn xóa môn học này không?"
+    );
+
+    if (!confirmDelete) return;
+
+    try {
+      await axios.delete(`${API_URL}/${id}`);
+      fetchSubjects();
+    } catch {
+      alert("Không thể xóa môn học!");
     }
   };
 
-  const startEdit = (sub: Subject) => {
-    setEditId(sub.id);
-    setFormData({ name: sub.name });
+  const startEdit = (subject: Subject) => {
+    setEditId(subject.id);
+    setFormData({ name: subject.name });
   };
 
   const resetForm = () => {
@@ -104,201 +114,288 @@ export default function AdminSubjectsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] p-4 md:p-8">
-      <div className="max-w-7xl mx-auto space-y-8">
-        {/* Header Section */}
-        <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-              <LayoutDashboard className="text-indigo-600" />
-              DTU Smart Hub <span className="text-indigo-600">/ Subjects</span>
-            </h1>
-            <p className="text-slate-500 font-medium">
-              Hệ thống quản lý môn học chuyên sâu
-            </p>
-          </div>
-          <button
-            onClick={fetchSubjects}
-            className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-slate-600 font-bold hover:bg-slate-50 transition-all shadow-sm"
-          >
-            <RefreshCcw size={18} className={loading ? "animate-spin" : ""} />
-            Làm mới dữ liệu
-          </button>
-        </header>
+    <div className="relative min-h-screen px-6 py-10 max-w-7xl mx-auto">
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[550px] h-[550px] bg-indigo-500/10 blur-[120px] rounded-full -z-10"></div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <StatCard
-            title="Tổng môn học"
-            count={subjects.length}
-            icon={<BookOpen />}
-            color="bg-indigo-600"
-          />
-          <StatCard
-            title="Đề thi mở"
-            count={subjects.length * 2}
-            icon={<Filter />}
-            color="bg-emerald-500"
-          />
-          <StatCard
-            title="Hệ thống"
-            count={1}
-            icon={<Plus />}
-            color="bg-slate-900"
-          />
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5 mb-8">
+        <div>
+          <div className="flex items-center gap-4 mb-3">
+            <div className="w-16 h-16 rounded-3xl bg-gradient-to-r from-indigo-600 to-blue-600 flex items-center justify-center shadow-xl">
+              <BookOpen className="text-white" size={30} />
+            </div>
+
+            <div>
+              <h1 className="text-4xl font-extrabold text-white">
+                Quản lý môn học
+              </h1>
+              <p className="text-slate-400 mt-1">
+                Quản lý danh sách môn học và dữ liệu liên quan trong hệ thống
+              </p>
+            </div>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* Form Quản lý */}
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="lg:col-span-4"
-          >
-            <div className="bg-white p-6 rounded-[2rem] shadow-xl shadow-slate-200/50 border border-white sticky top-8">
-              <h2 className="text-xl font-black text-slate-800 mb-6 flex items-center gap-2">
+        <button
+          onClick={fetchSubjects}
+          className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-white/5 border border-white/10 text-slate-200 hover:bg-white/10 transition-all"
+        >
+          <RefreshCcw
+            size={18}
+            className={loading ? "animate-spin" : ""}
+          />
+          Làm mới dữ liệu
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
+        <StatCard
+          title="Tổng môn học"
+          count={subjects.length}
+          icon={<BookOpen size={24} />}
+          color="from-blue-500 to-indigo-600"
+        />
+
+        <StatCard
+          title="Đang hiển thị"
+          count={filteredSubjects.length}
+          icon={<Filter size={24} />}
+          color="from-emerald-500 to-green-600"
+        />
+
+        <StatCard
+          title="Hệ thống"
+          count={1}
+          icon={<LayoutDashboard size={24} />}
+          color="from-pink-500 to-rose-500"
+        />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="lg:col-span-4"
+        >
+          <div className="bg-white/5 border border-white/10 rounded-3xl backdrop-blur-xl p-6 shadow-2xl sticky top-8">
+            <div className="flex items-center gap-3 mb-6">
+              <div
+                className={`w-14 h-14 rounded-2xl flex items-center justify-center ${
+                  editId
+                    ? "bg-gradient-to-r from-indigo-600 to-blue-600"
+                    : "bg-gradient-to-r from-emerald-500 to-green-600"
+                }`}
+              >
                 {editId ? (
-                  <Edit2 size={20} className="text-indigo-500" />
+                  <Edit2 className="text-white" size={22} />
                 ) : (
-                  <Plus size={20} className="text-emerald-500" />
+                  <Plus className="text-white" size={22} />
                 )}
-                {editId ? "Cập nhật môn học" : "Tạo môn học mới"}
-              </h2>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <label className="text-xs font-black text-slate-400 tracking-widest uppercase ml-1">
-                    Tên môn học
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    className="w-full px-5 py-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white outline-none transition-all font-bold text-slate-700"
-                    placeholder="Nhập tên môn..."
-                    value={formData.name}
-                    onChange={(e) => setFormData({ name: e.target.value })}
-                  />
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    type="submit"
-                    className={`flex-1 py-4 rounded-2xl font-black text-white shadow-lg transition-all active:scale-95 ${
-                      editId
-                        ? "bg-indigo-600 hover:bg-indigo-700"
-                        : "bg-slate-900 hover:bg-black"
-                    }`}
-                  >
-                    {editId ? "LƯU THAY ĐỔI" : "XÁC NHẬN THÊM"}
-                  </button>
-                  {editId && (
-                    <button
-                      type="button"
-                      onClick={resetForm}
-                      className="p-4 bg-slate-100 text-slate-400 rounded-2xl hover:bg-slate-200"
-                    >
-                      <XCircle size={24} />
-                    </button>
-                  )}
-                </div>
-              </form>
-            </div>
-          </motion.div>
-
-          {/* Danh sách hiển thị */}
-          <div className="lg:col-span-8 space-y-4">
-            <div className="flex items-center gap-4 bg-white p-2 rounded-2xl border border-slate-200 shadow-sm">
-              <div className="pl-4 text-slate-400">
-                <Search size={20} />
               </div>
-              <input
-                type="text"
-                placeholder="Tìm kiếm môn học theo tên..."
-                className="w-full py-3 bg-transparent outline-none font-medium text-slate-600"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+
+              <div>
+                <h2 className="text-xl font-bold text-white">
+                  {editId ? "Cập nhật môn học" : "Thêm môn học"}
+                </h2>
+                <p className="text-sm text-slate-400">
+                  {editId
+                    ? "Chỉnh sửa thông tin môn học"
+                    : "Tạo môn học mới cho hệ thống"}
+                </p>
+              </div>
             </div>
 
-            <div className="bg-white rounded-[2rem] shadow-xl shadow-slate-200/50 border border-white overflow-hidden">
-              <table className="w-full text-left">
-                <thead className="bg-slate-50/50 border-b border-slate-100">
-                  <tr>
-                    <th className="p-6 text-xs font-black text-slate-400 uppercase tracking-widest">
-                      Mã số
-                    </th>
-                    <th className="p-6 text-xs font-black text-slate-400 uppercase tracking-widest">
-                      Môn học
-                    </th>
-                    <th className="p-6 text-xs font-black text-slate-400 uppercase tracking-widest text-right">
-                      Thao tác
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-50">
-                  <AnimatePresence>
-                    {filteredSubjects.map((sub) => (
-                      <motion.tr
-                        layout
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        key={sub.id}
-                        className="group hover:bg-indigo-50/30 transition-colors"
-                      >
-                        <td className="p-6 font-mono text-indigo-400 font-bold">
-                          #00{sub.id}
-                        </td>
-                        <td className="p-6 font-black text-slate-700 text-lg">
-                          {sub.name}
-                        </td>
-                        <td className="p-6 text-right">
-                          <div className="flex justify-end gap-2">
-                            <button
-                              onClick={() => startEdit(sub)}
-                              className="p-3 bg-white text-slate-400 hover:text-indigo-600 hover:shadow-md rounded-xl transition-all"
-                            >
-                              <Edit2 size={18} />
-                            </button>
-                            <button
-                              onClick={() => handleDelete(sub.id)}
-                              className="p-3 bg-white text-slate-400 hover:text-red-600 hover:shadow-md rounded-xl transition-all"
-                            >
-                              <Trash2 size={18} />
-                            </button>
-                          </div>
-                        </td>
-                      </motion.tr>
-                    ))}
-                  </AnimatePresence>
-                </tbody>
-              </table>
-              {filteredSubjects.length === 0 && (
-                <div className="p-20 text-center text-slate-400 font-bold">
-                  Không có dữ liệu môn học phù hợp.
-                </div>
-              )}
-            </div>
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div>
+                <label className="block text-sm font-semibold text-slate-300 mb-2">
+                  Tên môn học
+                </label>
+
+                <input
+                  type="text"
+                  required
+                  placeholder="Ví dụ: Lập trình Web"
+                  value={formData.name}
+                  onChange={(e) =>
+                    setFormData({ name: e.target.value })
+                  }
+                  className="w-full px-4 py-4 rounded-2xl bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  type="submit"
+                  className={`flex-1 py-4 rounded-2xl font-bold text-white transition-all hover:scale-[1.02] ${
+                    editId
+                      ? "bg-gradient-to-r from-indigo-600 to-blue-600"
+                      : "bg-gradient-to-r from-emerald-500 to-green-600"
+                  }`}
+                >
+                  {editId ? "Lưu thay đổi" : "Thêm môn học"}
+                </button>
+
+                {editId && (
+                  <button
+                    type="button"
+                    onClick={resetForm}
+                    className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-all"
+                  >
+                    <XCircle size={22} />
+                  </button>
+                )}
+              </div>
+            </form>
           </div>
-        </div>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="lg:col-span-8"
+        >
+          <div className="bg-white/5 border border-white/10 rounded-3xl overflow-hidden backdrop-blur-xl shadow-2xl">
+            <div className="p-5 border-b border-white/10 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-bold text-white">
+                  Danh sách môn học
+                </h2>
+                <p className="text-slate-400 text-sm mt-1">
+                  Tổng cộng {filteredSubjects.length} môn học
+                </p>
+              </div>
+
+              <div className="relative w-full md:w-[320px]">
+                <Search
+                  size={18}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"
+                />
+
+                <input
+                  type="text"
+                  placeholder="Tìm kiếm môn học..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-11 pr-4 py-3 rounded-2xl bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+            </div>
+
+            {loading ? (
+              <div className="flex justify-center items-center py-24">
+                <div className="w-14 h-14 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+              </div>
+            ) : filteredSubjects.length === 0 ? (
+              <div className="text-center py-24">
+                <BookOpen
+                  className="mx-auto text-slate-500 mb-4"
+                  size={60}
+                />
+                <h3 className="text-2xl font-bold text-white mb-2">
+                  Không tìm thấy môn học
+                </h3>
+                <p className="text-slate-400">
+                  Thử tìm kiếm với từ khóa khác
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-white">
+                  <thead className="bg-white/10">
+                    <tr>
+                      <th className="px-6 py-4 text-left text-sm font-bold text-slate-300">
+                        ID
+                      </th>
+                      <th className="px-6 py-4 text-left text-sm font-bold text-slate-300">
+                        Tên môn học
+                      </th>
+                      <th className="px-6 py-4 text-center text-sm font-bold text-slate-300">
+                        Hành động
+                      </th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    <AnimatePresence>
+                      {filteredSubjects.map((sub) => (
+                        <motion.tr
+                          key={sub.id}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0 }}
+                          className="border-t border-white/10 hover:bg-white/5 transition"
+                        >
+                          <td className="px-6 py-5">
+                            <span className="px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-400 font-semibold text-sm">
+                              #{sub.id}
+                            </span>
+                          </td>
+
+                          <td className="px-6 py-5">
+                            <div className="flex items-center gap-4">
+                              <div className="w-11 h-11 rounded-2xl bg-gradient-to-r from-indigo-500 to-blue-600 flex items-center justify-center">
+                                <BookOpen className="text-white" size={18} />
+                              </div>
+
+                              <div>
+                                <p className="font-semibold text-white text-lg">
+                                  {sub.name}
+                                </p>
+                                <p className="text-slate-400 text-sm">
+                                  Môn học trong hệ thống
+                                </p>
+                              </div>
+                            </div>
+                          </td>
+
+                          <td className="px-6 py-5">
+                            <div className="flex items-center justify-center gap-3">
+                              <button
+                                onClick={() => startEdit(sub)}
+                                className="w-11 h-11 rounded-xl bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition-all flex items-center justify-center"
+                              >
+                                <Edit2 size={18} />
+                              </button>
+
+                              <button
+                                onClick={() => handleDelete(sub.id)}
+                                className="w-11 h-11 rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-all flex items-center justify-center"
+                              >
+                                <Trash2 size={18} />
+                              </button>
+                            </div>
+                          </td>
+                        </motion.tr>
+                      ))}
+                    </AnimatePresence>
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </motion.div>
       </div>
     </div>
   );
 }
 
-// COMPONENT CARD THỐNG KÊ
 function StatCard({ title, count, icon, color }: StatCardProps) {
   return (
-    <div className="bg-white p-6 rounded-[2rem] shadow-md border border-white flex items-center gap-5 transition-transform hover:scale-[1.02]">
-      <div
-        className={`p-4 rounded-2xl text-white ${color} shadow-lg shadow-indigo-100`}
-      >
-        {icon}
+    <div className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-xl shadow-xl">
+      <div className="flex items-center justify-between mb-5">
+        <div
+          className={`w-14 h-14 rounded-2xl bg-gradient-to-r ${color} flex items-center justify-center text-white shadow-lg`}
+        >
+          {icon}
+        </div>
+
+        <LayoutDashboard className="text-slate-500" size={22} />
       </div>
-      <div>
-        <p className="text-sm font-bold text-slate-400 uppercase tracking-wider">
-          {title}
-        </p>
-        <p className="text-3xl font-black text-slate-800">{count}</p>
-      </div>
+
+      <h3 className="text-slate-400 text-sm font-medium mb-2">
+        {title}
+      </h3>
+      <p className="text-3xl font-extrabold text-white">{count}</p>
     </div>
   );
 }

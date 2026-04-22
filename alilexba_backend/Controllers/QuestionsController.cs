@@ -1,10 +1,11 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using alilexba_backend.Data;
+﻿using alilexba_backend.Data;
+using alilexba_backend.DTOs;
 using alilexba_backend.Models;
-using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using MiniExcelLibs; // Thư viện xử lý Excel
 using System.IO;
+using System.Threading.Tasks;
 
 namespace alilexba_backend.Controllers
 {
@@ -45,55 +46,91 @@ namespace alilexba_backend.Controllers
 
         // 3. TÍNH NĂNG CHÍNH: Nhập hàng loạt từ Excel
         [HttpPost("upload-excel")]
-        public async Task<IActionResult> UploadExcel(IFormFile file, [FromQuery] int subjectId)
+        [Consumes("multipart/form-data")]
+        [RequestSizeLimit(50000000)]
+        public async Task<IActionResult> UploadExcel([FromForm] UploadExcelRequest request, [FromQuery] int subjectId)
         {
-            if (file == null || file.Length == 0)
-                return BadRequest("Vui lòng chọn file Excel!");
-
-            // Kiểm tra môn học có tồn tại không
-            var subjectExists = await _context.Subjects.AnyAsync(s => s.Id == subjectId);
-            if (!subjectExists)
-                return BadRequest("ID môn học không hợp lệ hoặc không tồn tại!");
-
             try
             {
-                using (var stream = file.OpenReadStream())
+                Console.WriteLine("1");
+                var file = request.File;
+                if (file == null || file.Length == 0)
+                    return BadRequest("Vui lòng chọn file Excel!");
+
+                var subjectExists = await _context.Subjects.AnyAsync(s => s.Id == subjectId);
+                if (!subjectExists)
+                    return BadRequest("ID môn học không hợp lệ hoặc không tồn tại!");
+
+                try
                 {
-                    // MiniExcel sẽ tự động map các cột trong file vào Model này
-                    var rows = stream.Query<QuestionExcelModel>().ToList();
-
-                    if (!rows.Any()) return BadRequest("File Excel trống hoặc sai cấu trúc!");
-
-                    foreach (var row in rows)
+                    using (var stream = file.OpenReadStream())
                     {
-                        // Tạo đối tượng Question mới
-                        var newQuestion = new Question
+                        var rows = stream.Query<QuestionExcelModel>().ToList();
+
+                        if (!rows.Any())
+                            return BadRequest("File Excel trống hoặc sai cấu trúc!");
+
+                        foreach (var row in rows)
                         {
-                            Content = row.Content ?? "Câu hỏi không có nội dung",
-                            SubjectId = subjectId,
-                            Answers = new List<Answer>()
-                        };
+                            var newQuestion = new Question
+                            {
+                                Content = row.Content ?? "Câu hỏi không có nội dung",
+                                SubjectId = subjectId,
+                                Answers = new List<Answer>()
+                            };
 
-                        // Chuẩn hóa đáp án đúng (A, B, C, D)
-                        string correctLetter = row.CorrectOption?.Trim().ToUpper() ?? "";
+                            string correctLetter = row.CorrectOption?.Trim().ToUpper() ?? "";
 
-                        // Tạo 4 đáp án tương ứng dựa trên dữ liệu từ file Answer.cs của Quốc (giả sử dùng field Content)
-                        newQuestion.Answers.Add(new Answer { Text = row.OptionA ?? "", IsCorrect = (correctLetter == "A") });
-                        newQuestion.Answers.Add(new Answer { Text = row.OptionB ?? "", IsCorrect = (correctLetter == "B") });
-                        newQuestion.Answers.Add(new Answer { Text = row.OptionC ?? "", IsCorrect = (correctLetter == "C") });
-                        newQuestion.Answers.Add(new Answer { Text = row.OptionD ?? "", IsCorrect = (correctLetter == "D") });
+                            newQuestion.Answers.Add(new Answer
+                            {
+                                Text = row.OptionA ?? "",
+                                IsCorrect = correctLetter == "A"
+                            });
 
-                        _context.Questions.Add(newQuestion);
+                            newQuestion.Answers.Add(new Answer
+                            {
+                                Text = row.OptionB ?? "",
+                                IsCorrect = correctLetter == "B"
+                            });
+
+                            newQuestion.Answers.Add(new Answer
+                            {
+                                Text = row.OptionC ?? "",
+                                IsCorrect = correctLetter == "C"
+                            });
+
+                            newQuestion.Answers.Add(new Answer
+                            {
+                                Text = row.OptionD ?? "",
+                                IsCorrect = correctLetter == "D"
+                            });
+
+                            _context.Questions.Add(newQuestion);
+                        }
+                        Console.WriteLine("2");
+                        await _context.SaveChangesAsync();
+                        Console.WriteLine("3");
+                        return Ok(new
+                        {
+                            message = $"Thành công! Đã nhập {rows.Count} câu hỏi vào hệ thống AILEXBA."
+                        });
                     }
-
-                    await _context.SaveChangesAsync();
-                    return Ok(new { message = $"Thành công! Đã nhập {rows.Count} câu hỏi vào hệ thống AILEXBA." });
+                }
+                catch (Exception ex)
+                {
+                    return BadRequest(new
+                    {
+                        message = ex.Message
+                    });
                 }
             }
             catch (Exception ex)
             {
-                // Trả về lỗi chi tiết để Quốc dễ sửa
-                return BadRequest($"Lỗi xử lý: {ex.Message}");
+                Console.WriteLine(ex.ToString());
+                return BadRequest(new
+                {
+                    message = ex.ToString()
+                });
             }
         }
     }

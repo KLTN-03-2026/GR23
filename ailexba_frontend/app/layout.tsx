@@ -47,7 +47,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
           {/* Logo */}
           <Link
-            href="/"
+            href={user?.role === 'Admin' ? '/admin/subjects' : '/'}
             className="text-2xl font-black bg-gradient-to-r from-blue-500 to-indigo-500 bg-clip-text text-transparent hover:scale-105 transition"
           >
             AILEXBA.
@@ -57,7 +57,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <nav className="flex gap-6 items-center font-medium ml-auto">
 
             {/* USER NAV */}
-            {navLink("/", "Trang chủ")}
+            {navLink(user?.role === 'Admin' ? '/admin/subjects' : '/', 'Trang chủ')}
             {navLink("/about", "Giới thiệu")}
             {navLink("/exam", "Đề thi")}
             {navLink("/history", "Lịch sử")}

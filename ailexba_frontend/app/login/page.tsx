@@ -26,8 +26,13 @@ export default function LoginPage() {
     
     // Kiểm tra res có dữ liệu là đi luôn
     if (res) {
-      console.log("Đang bay sang trang chủ...");
-      window.location.href = '/'; 
+      if(authService.isAdmin()){
+        console.log("Đang bay sang admin dashboard...");
+        window.location.href = '/admin/subjects'; 
+      } else {
+        console.log("Đang bay sang trang chủ...");
+        window.location.href = '/'; 
+      }
     }
   } catch (err: unknown) {
   // Ép kiểu err về dạng có thể đọc được message

@@ -35,6 +35,9 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
+// Kích hoạt CORS trước khi Map Controllers
+app.UseCors("AllowReact");
+
 // --- 4. Pipeline xử lý Request (Thứ tự cực kỳ quan trọng) ---
 
 if (app.Environment.IsDevelopment())
@@ -45,9 +48,6 @@ if (app.Environment.IsDevelopment())
 
 // Chuyển hướng HTTPS (Có thể comment dòng này nếu test localhost bị lỗi chứng chỉ)
 app.UseHttpsRedirection();
-
-// Kích hoạt CORS trước khi Map Controllers
-app.UseCors("AllowReact");
 
 // Thứ tự Authentication -> Authorization là bắt buộc
 app.UseAuthentication();
