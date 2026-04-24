@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-const API_URL = 'https://localhost:7083';
+const API_URL = "https://localhost:7083";
 
-import { useEffect, useState } from 'react';
-import { authService } from '@/services/auth.service';
+import { useEffect, useState } from "react";
+import { authService } from "@/services/auth.service";
 
 interface Answer {
   id?: number;
@@ -22,24 +22,24 @@ export default function QuestionsPage() {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [filteredQuestions, setFilteredQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState("");
 
   const [showForm, setShowForm] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const [newQuestion, setNewQuestion] = useState({
-    content: '',
+    content: "",
     subjectId: 1,
-    option1: '',
-    option2: '',
-    option3: '',
-    option4: '',
-    correct: 'A'
+    option1: "",
+    option2: "",
+    option3: "",
+    option4: "",
+    correct: "A",
   });
 
   useEffect(() => {
     if (!authService.isAdmin()) {
-      window.location.href = '/';
+      window.location.href = "/";
       return;
     }
 
@@ -50,9 +50,9 @@ export default function QuestionsPage() {
     const keyword = search.toLowerCase();
 
     const filtered = questions.filter(
-      (q: any) =>
+      (q: Question) =>
         q.content?.toLowerCase().includes(keyword) ||
-        q.subjectId?.toString().includes(keyword)
+        q.subjectId?.toString().includes(keyword),
     );
 
     setFilteredQuestions(filtered);
@@ -64,12 +64,12 @@ export default function QuestionsPage() {
 
       const text = await response.text();
 
-      let result: any[] = [];
+      let result: Question[] = [];
 
       try {
         result = JSON.parse(text);
       } catch {
-        console.error('API không trả JSON');
+        console.error("API không trả JSON");
       }
 
       setQuestions(result);
@@ -83,13 +83,13 @@ export default function QuestionsPage() {
 
   const resetForm = () => {
     setNewQuestion({
-      content: '',
+      content: "",
       subjectId: 1,
-      option1: '',
-      option2: '',
-      option3: '',
-      option4: '',
-      correct: 'A'
+      option1: "",
+      option2: "",
+      option3: "",
+      option4: "",
+      correct: "A",
     });
   };
 
@@ -106,80 +106,80 @@ export default function QuestionsPage() {
         answers: [
           {
             text: newQuestion.option1,
-            isCorrect: newQuestion.correct === 'A'
+            isCorrect: newQuestion.correct === "A",
           },
           {
             text: newQuestion.option2,
-            isCorrect: newQuestion.correct === 'B'
+            isCorrect: newQuestion.correct === "B",
           },
           {
             text: newQuestion.option3,
-            isCorrect: newQuestion.correct === 'C'
+            isCorrect: newQuestion.correct === "C",
           },
           {
             text: newQuestion.option4,
-            isCorrect: newQuestion.correct === 'D'
-          }
-        ]
+            isCorrect: newQuestion.correct === "D",
+          },
+        ],
       };
 
       const response = await fetch(`${API_URL}/api/Questions`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json'
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || 'Lưu câu hỏi thất bại');
+        throw new Error(data.message || "Lưu câu hỏi thất bại");
       }
 
-      alert(data.message || 'Lưu câu hỏi thành công');
+      alert(data.message || "Lưu câu hỏi thành công");
       setShowForm(false);
       resetForm();
       loadQuestions();
     } catch (error) {
       console.error(error);
-      alert('Lưu câu hỏi thất bại');
+      alert("Lưu câu hỏi thất bại");
     }
   };
 
   const handleUploadExcel = async () => {
     if (!selectedFile) {
-      alert('Vui lòng chọn file Excel');
+      alert("Vui lòng chọn file Excel");
       return;
     }
 
     try {
       const excelFormData = new FormData();
-      excelFormData.append('file', selectedFile);
+      excelFormData.append("file", selectedFile);
 
       const response = await fetch(
         `${API_URL}/api/Questions/upload-excel?subjectId=${newQuestion.subjectId}`,
         {
-          method: 'POST',
-          body: excelFormData
-        }
+          method: "POST",
+          body: excelFormData,
+        },
       );
 
       const text = await response.text();
 
-      console.log('Status:', response.status);
-      console.log('Response:', text);
+      console.log("Status:", response.status);
+      console.log("Response:", text);
 
       if (!response.ok) {
-        throw new Error(text || 'Upload Excel thất bại');
+        throw new Error(text || "Upload Excel thất bại");
       }
 
-      alert('Upload Excel thành công');
+      alert("Upload Excel thành công");
       setSelectedFile(null);
       loadQuestions();
     } catch (error) {
       console.error(error);
-      alert('Failed to fetch - kiểm tra backend hoặc CORS');
+      alert("Failed to fetch - kiểm tra backend hoặc CORS");
     }
   };
 
@@ -209,54 +209,52 @@ export default function QuestionsPage() {
           </div>
 
           <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-white/10 border border-white/20 shadow-[0_0_0_1px_rgba(255,255,255,0.04)]">
-        <div className="flex flex-col">
-          <span className="text-xs text-slate-400">Mã đề</span>
+            <div className="flex flex-col">
+              <span className="text-xs text-slate-400">Mã đề</span>
 
-          <input
-            type="number"
-            min={1}
-            value={newQuestion.subjectId}
-            onChange={(e) =>
-              setNewQuestion({
-                ...newQuestion,
-                subjectId: Number(e.target.value) || 1
-              })
-            }
-            className="w-20 bg-transparent text-white font-semibold outline-none"
-          />
-        </div>
+              <input
+                type="number"
+                min={1}
+                value={newQuestion.subjectId}
+                onChange={(e) =>
+                  setNewQuestion({
+                    ...newQuestion,
+                    subjectId: Number(e.target.value) || 1,
+                  })
+                }
+                className="w-20 bg-transparent text-black font-semibold outline-none"
+              />
+            </div>
 
-        <div className="flex flex-col gap-1">
-          <button
-            type="button"
-            onClick={() =>
-              setNewQuestion({
-                ...newQuestion,
-                subjectId: newQuestion.subjectId + 1
-              })
-            }
-            className="w-7 h-7 rounded-lg bg-white/10 border border-white/15 text-white hover:bg-white/20 transition"
-          >
-            +
-          </button>
+            <div className="flex flex-col gap-1">
+              <button
+                type="button"
+                onClick={() =>
+                  setNewQuestion({
+                    ...newQuestion,
+                    subjectId: newQuestion.subjectId + 1,
+                  })
+                }
+                className="w-7 h-7 rounded-lg bg-white/10 border border-white/15 text-white hover:bg-white/20 transition"
+              >
+                +
+              </button>
 
-          <button
-            type="button"
-            onClick={() =>
-              setNewQuestion({
-                ...newQuestion,
-                subjectId:
-                  newQuestion.subjectId > 1
-                    ? newQuestion.subjectId - 1
-                    : 1
-              })
-            }
-            className="w-7 h-7 rounded-lg bg-white/10 border border-white/15 text-white hover:bg-white/20 transition"
-          >
-            -
-          </button>
-        </div>
-      </div>
+              <button
+                type="button"
+                onClick={() =>
+                  setNewQuestion({
+                    ...newQuestion,
+                    subjectId:
+                      newQuestion.subjectId > 1 ? newQuestion.subjectId - 1 : 1,
+                  })
+                }
+                className="w-7 h-7 rounded-lg bg-white/10 border border-white/15 text-white hover:bg-white/20 transition"
+              >
+                -
+              </button>
+            </div>
+          </div>
 
           <label className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-white/10 border border-white/20 shadow-[0_0_0_1px_rgba(255,255,255,0.04)] text-slate-300 cursor-pointer hover:bg-white/15 hover:border-white/30 transition min-w-[280px]">
             <span className="px-3 py-2 rounded-xl bg-white/10 border border-white/10 text-white text-sm font-medium">
@@ -264,7 +262,7 @@ export default function QuestionsPage() {
             </span>
 
             <span className="text-sm truncate">
-              {selectedFile ? selectedFile.name : 'Chưa có tệp nào được chọn'}
+              {selectedFile ? selectedFile.name : "Chưa có tệp nào được chọn"}
             </span>
 
             <input
@@ -327,18 +325,16 @@ export default function QuestionsPage() {
                   </span>
                 </div>
 
-                <p className="font-semibold text-xl text-white">
-                  {q.content}
-                </p>
+                <p className="font-semibold text-xl text-black">{q.content}</p>
 
                 <div className="grid md:grid-cols-2 gap-3">
-                  {q.answers?.map((opt: any) => (
+                  {q.answers?.map((opt: Answer) => (
                     <div
                       key={opt.text}
                       className={`p-3 rounded-xl border ${
                         opt.isCorrect
-                          ? 'bg-green-500/10 border-green-500/20 text-green-400'
-                          : 'bg-white/5 border-white/10 text-slate-300'
+                          ? "bg-green-500/10 border-green-500/20 text-black font-bold"
+                          : "bg-white/5 border-white/10 text-black"
                       }`}
                     >
                       {opt.text}
@@ -354,9 +350,7 @@ export default function QuestionsPage() {
       {showForm && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 px-4">
           <div className="w-full max-w-2xl bg-slate-900 border border-white/10 rounded-3xl p-8 shadow-2xl max-h-[90vh] overflow-y-auto">
-            <h2 className="text-2xl font-bold mb-6 text-white">
-              Thêm câu hỏi
-            </h2>
+            <h2 className="text-2xl font-bold mb-6 text-white">Thêm câu hỏi</h2>
 
             <div className="space-y-4">
               <textarea
@@ -375,7 +369,7 @@ export default function QuestionsPage() {
                 onChange={(e) =>
                   setNewQuestion({
                     ...newQuestion,
-                    subjectId: Number(e.target.value)
+                    subjectId: Number(e.target.value),
                   })
                 }
                 className="w-full p-3 rounded-xl bg-white/5 border border-white/10 text-white"

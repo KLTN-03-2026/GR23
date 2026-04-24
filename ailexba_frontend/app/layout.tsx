@@ -13,9 +13,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   const pathname = usePathname();
   const [user, setUser] = useState<UserData | null>(null);
 
+  // --- ĐÃ SỬA LỖI ESLINT ---
   useEffect(() => {
-    setUser(authService.getCurrentUser());
+    const currentUser = authService.getCurrentUser();
+    if (currentUser) {
+      setTimeout(() => {
+        setUser(currentUser);
+      }, 0);
+    }
   }, []);
+  // -----------------------
 
   const handleLogout = () => {
     authService.logout();
@@ -27,7 +34,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <Link
       href={href}
       className={`relative px-3 py-2 transition-all duration-300 
-        ${pathname === href ? 'text-blue-600 font-bold' : 'text-slate-600 hover:text-blue-600'}
+        ${pathname === href ? 'text-blue-600 font-bold' : 'text-slate-300 hover:text-blue-400'}
       `}
     >
       {label}
@@ -37,45 +44,48 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     </Link>
   );
 
- return (
-  <html lang="vi">
-    <body className={`${inter.className} bg-slate-900 text-white min-h-screen flex flex-col`}>
+  return (
+    <html lang="vi" suppressHydrationWarning>
+      <body 
+        className={`${inter.className} bg-slate-900 text-white min-h-screen flex flex-col`}
+        suppressHydrationWarning
+      >
+        {/* Navbar */}
+        <header className="sticky top-0 z-50 bg-slate-900/80 backdrop-blur-xl border-b border-white/10">
+          <div className="w-full px-6 h-16 flex items-center justify-between">
 
-      {/* Navbar */}
-      <header className="sticky top-0 z-50 bg-slate-900/80 backdrop-blur-xl border-b border-white/10">
-        <div className="w-full px-6 h-16 flex items-center justify-between">
+            {/* Logo */}
+            <Link
+              href={user?.role === 'Admin' ? '/admin/subjects' : '/'}
+              className="text-2xl font-black bg-gradient-to-r from-blue-500 to-indigo-500 bg-clip-text text-transparent hover:scale-105 transition"
+            >
+              AILEXBA.
+            </Link>
 
-          {/* Logo */}
-          <Link
-            href={user?.role === 'Admin' ? '/admin/subjects' : '/'}
-            className="text-2xl font-black bg-gradient-to-r from-blue-500 to-indigo-500 bg-clip-text text-transparent hover:scale-105 transition"
-          >
-            AILEXBA.
-          </Link>
+            {/* Menu */}
+            <nav className="flex gap-6 items-center font-medium ml-auto">
 
-          {/* Menu */}
-          <nav className="flex gap-6 items-center font-medium ml-auto">
+              {/* ADMIN (Chỉ hiện khi là Admin - Sprint 1&2) */}
+              {user?.role === "Admin" && (
+                <>
+                  {navLink("/admin/subjects", "Môn học")}
+                  {navLink("/admin/exams", "QL đề")}  
+                  {navLink("/admin/question", "Câu hỏi")}
+                  {navLink("/admin/users", "Người dùng")}
+                </>
+              )}
 
-            {/* USER NAV */}
-            {navLink(user?.role === 'Admin' ? '/admin/subjects' : '/', 'Trang chủ')}
-            {navLink("/about", "Giới thiệu")}
-            {navLink("/exam", "Đề thi")}
-            {navLink("/history", "Lịch sử")}
-            {navLink("/profile", "Cá nhân")}
-
-            {/* ADMIN (chỉ hiện khi là admin) */}
-            {user?.role === "Admin" && (
-              <>
-                {navLink("/admin/question", "Câu hỏi")}
-                {navLink("/admin/exams", "QL đề")}  
-                {navLink("/admin/users", "Người dùng")}
-              </>
-            )}
+              {/* STUDENT (Chỉ hiện khi KHÔNG phải Admin - Sprint 1&2) */}
+              {user?.role !== "Admin" && (
+                <>
+                  {navLink("/", "Trang chủ")}
+                  {navLink("/profile", "Cá nhân")}
+                </>
+              )}
 
               {/* AUTH */}
               {user ? (
                 <div className="flex items-center gap-4 ml-6 pl-6 border-l border-white/10">
-
                   <span className="text-sm font-semibold text-white bg-white/10 px-3 py-1 rounded-lg backdrop-blur">
                     👋 {user.fullName}
                   </span>
@@ -89,7 +99,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 </div>
               ) : (
                 <div className="flex gap-3 ml-6">
-
                   <Link
                     href="/login"
                     className="px-5 py-2 text-white bg-white/10 hover:bg-white/20 rounded-xl transition-all hover:scale-105"
@@ -103,26 +112,25 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   >
                     Đăng ký
                   </Link>
-
                 </div>
-                    )}
-          </nav>
-        </div>
-      </header>
+              )}
+            </nav>
+          </div>
+        </header>
 
-      {/* Nội dung */}
-      <main className="flex-1 w-full max-w-6xl mx-auto px-6 py-10">
-        {children}
-      </main>
+        {/* Nội dung */}
+        <main className="flex-1 w-full max-w-6xl mx-auto px-6 py-10">
+          {children}
+        </main>
 
-      {/* Footer */}
-      <footer className="bg-slate-900 border-t border-white/10 py-6 text-center text-slate-400 text-sm">
-        <p className="hover:text-white transition">
-          © 2026 AILEXBA Project - Nhóm Duy Tân University.
-        </p>
-      </footer>
+        {/* Footer */}
+        <footer className="bg-slate-900 border-t border-white/10 py-6 text-center text-slate-400 text-sm">
+          <p className="hover:text-white transition">
+            © 2026 AILEXBA Project - Nhóm Duy Tân University.
+          </p>
+        </footer>
 
-    </body>
-  </html>
-);
+      </body>
+    </html>
+  );
 }
