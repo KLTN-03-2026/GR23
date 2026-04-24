@@ -1,5 +1,6 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.Text.Json.Serialization; 
+﻿using System;
+using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace alilexba_backend.Models
 {
@@ -18,9 +19,12 @@ namespace alilexba_backend.Models
 
         public int TotalQuestions { get; set; } // Tổng số câu hỏi
 
-        public DateTime CompletedAt { get; set; } = DateTime.Now;
+        // Sửa CompletedAt thành TakenAt để khớp với Controller
+        public DateTime TakenAt { get; set; } = DateTime.UtcNow;
 
-        // --- LIÊN KẾT BẢNG ---
+        // ==========================================
+        // KHU VỰC LIÊN KẾT BẢNG (NAVIGATION)
+        // ==========================================
 
         [JsonIgnore] // Chặn vòng lặp JSON từ Result -> User
         public virtual User? User { get; set; }

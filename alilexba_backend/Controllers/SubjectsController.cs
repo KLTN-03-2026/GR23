@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using alilexba_backend.Data;
 using alilexba_backend.Models;
 using System.Threading.Tasks;
+using System.Linq;
 
 namespace alilexba_backend.Controllers
 {
@@ -17,7 +18,11 @@ namespace alilexba_backend.Controllers
             _context = context;
         }
 
-        // Lấy danh sách môn học
+        // ==========================================
+        // PB20: QUẢN LÝ MÔN HỌC & CHUYÊN ĐỀ
+        // ==========================================
+
+        // 1. Lấy danh sách môn học
         [HttpGet]
         public async Task<IActionResult> GetSubjects()
         {
@@ -25,22 +30,34 @@ namespace alilexba_backend.Controllers
             return Ok(subjects);
         }
 
-        // Thêm môn học mới (VD: Toán, Tiếng Anh)
+        // 2. Thêm môn học mới
         [HttpPost]
         public async Task<IActionResult> AddSubject([FromBody] Subject subject)
         {
+            // Kiểm tra tên môn học không được để trống
+            if (string.IsNullOrWhiteSpace(subject.Name))
+            {
+                return BadRequest(new { message = "Tên môn học không được để trống." });
+            }
+
             _context.Subjects.Add(subject);
             await _context.SaveChangesAsync();
-            return Ok(new { message = "Đã thêm môn học thành công!", subjectId = subject.Id });
+
+            return Ok(new { message = "Đã thêm môn học thành công!", data = subject });
         }
-        // sửa 
+
+        // 3. Sửa môn học
         [HttpPut("{id}")]
         public async Task<IActionResult> PutSubject(int id, [FromBody] Subject subject)
         {
-            // Kiểm tra xem ID trên URL và ID trong Body có khớp nhau không
             if (id != subject.Id)
             {
                 return BadRequest(new { message = "ID không đồng nhất giữa URL và dữ liệu gửi lên!" });
+            }
+
+            if (string.IsNullOrWhiteSpace(subject.Name))
+            {
+                return BadRequest(new { message = "Tên môn học không được để trống." });
             }
 
             _context.Entry(subject).State = EntityState.Modified;
@@ -51,22 +68,35 @@ namespace alilexba_backend.Controllers
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (!SubjectExists(id)) return NotFound(new { message = "Không tìm thấy môn học để cập nhật." });
-                else throw;
+                if (!SubjectExists(id))
+                    return NotFound(new { message = "Không tìm thấy môn học để cập nhật." });
+                else
+                    throw;
             }
 
             return Ok(new { message = "Cập nhật môn học thành công!" });
         }
 
-        // xóa
+        // 4. Xóa môn học
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteSubject(int id)
         {
             var subject = await _context.Subjects.FindAsync(id);
-            if (subject == null) return NotFound(new { message = "Không tìm thấy môn học để xóa." });
+            if (subject == null)
+                return NotFound(new { message = "Không tìm thấy môn học để xóa." });
 
             _context.Subjects.Remove(subject);
-            await _context.SaveChangesAsync();
+
+            try
+            {
+                // Nếu môn học đang chứa Câu hỏi/Đề thi, dòng này sẽ văng lỗi khóa ngoại
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateException)
+            {
+                // Bắt lỗi và báo cho Frontend biết thay vì sập API
+                return BadRequest(new { message = "Không thể xóa môn học này vì đang có câu hỏi hoặc đề thi liên kết với nó." });
+            }
 
             return Ok(new { message = "Đã xóa môn học khỏi hệ thống!" });
         }

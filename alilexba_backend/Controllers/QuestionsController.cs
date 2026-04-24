@@ -3,9 +3,15 @@ using alilexba_backend.DTOs;
 using alilexba_backend.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using MiniExcelLibs; // Thư viện xử lý Excel
+using MiniExcelLibs;
+using System;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
+using System.Collections.Generic;
+using System.Text.RegularExpressions;
+using DocumentFormat.OpenXml.Packaging;
+using DocumentFormat.OpenXml.Wordprocessing;
 
 namespace alilexba_backend.Controllers
 {
@@ -24,11 +30,9 @@ namespace alilexba_backend.Controllers
         [HttpGet]
         public async Task<IActionResult> GetQuestions()
         {
-            // CỰC KỲ QUAN TRỌNG: Phải có .Include thì mảng answers mới có dữ liệu
             var questions = await _context.Questions
                 .Include(q => q.Answers)
                 .ToListAsync();
-
             return Ok(questions);
         }
 
@@ -44,99 +48,164 @@ namespace alilexba_backend.Controllers
             return Ok(new { message = "Đã thêm câu hỏi thành công!", questionId = question.Id });
         }
 
-        // 3. TÍNH NĂNG CHÍNH: Nhập hàng loạt từ Excel
+        // ---------------------------------------------------------
+        // NHÓM IMPORT (NHẬP FILE)
+        // ---------------------------------------------------------
+
+        // 3. Nhập hàng loạt từ Excel
         [HttpPost("upload-excel")]
         [Consumes("multipart/form-data")]
-        [RequestSizeLimit(50000000)]
         public async Task<IActionResult> UploadExcel([FromForm] UploadExcelRequest request, [FromQuery] int subjectId)
         {
             try
             {
-                Console.WriteLine("1");
-                var file = request.File;
-                if (file == null || file.Length == 0)
-                    return BadRequest("Vui lòng chọn file Excel!");
+                if (request.File == null || request.File.Length == 0) return BadRequest("Vui lòng chọn file Excel!");
 
-                var subjectExists = await _context.Subjects.AnyAsync(s => s.Id == subjectId);
-                if (!subjectExists)
-                    return BadRequest("ID môn học không hợp lệ hoặc không tồn tại!");
-
-                try
+                using (var stream = request.File.OpenReadStream())
                 {
-                    using (var stream = file.OpenReadStream())
+                    var rows = stream.Query<QuestionExcelModel>().ToList();
+                    if (!rows.Any()) return BadRequest("File Excel trống!");
+
+                    foreach (var row in rows)
                     {
-                        var rows = stream.Query<QuestionExcelModel>().ToList();
-
-                        if (!rows.Any())
-                            return BadRequest("File Excel trống hoặc sai cấu trúc!");
-
-                        foreach (var row in rows)
+                        var newQuestion = new Question
                         {
-                            var newQuestion = new Question
-                            {
-                                Content = row.Content ?? "Câu hỏi không có nội dung",
-                                SubjectId = subjectId,
-                                Answers = new List<Answer>()
-                            };
+                            Content = row.Content ?? "N/A",
+                            SubjectId = subjectId,
+                            Answers = new List<Answer>()
+                        };
 
-                            string correctLetter = row.CorrectOption?.Trim().ToUpper() ?? "";
+                        string correct = row.CorrectOption?.Trim().ToUpper() ?? "";
+                        newQuestion.Answers.Add(new Answer { Text = row.OptionA ?? "", IsCorrect = correct == "A" });
+                        newQuestion.Answers.Add(new Answer { Text = row.OptionB ?? "", IsCorrect = correct == "B" });
+                        newQuestion.Answers.Add(new Answer { Text = row.OptionC ?? "", IsCorrect = correct == "C" });
+                        newQuestion.Answers.Add(new Answer { Text = row.OptionD ?? "", IsCorrect = correct == "D" });
 
-                            newQuestion.Answers.Add(new Answer
-                            {
-                                Text = row.OptionA ?? "",
-                                IsCorrect = correctLetter == "A"
-                            });
+                        _context.Questions.Add(newQuestion);
+                    }
+                    await _context.SaveChangesAsync();
+                    return Ok(new { message = $"Đã nhập {rows.Count} câu hỏi từ Excel." });
+                }
+            }
+            catch (Exception ex) { return BadRequest(new { message = ex.Message }); }
+        }
 
-                            newQuestion.Answers.Add(new Answer
-                            {
-                                Text = row.OptionB ?? "",
-                                IsCorrect = correctLetter == "B"
-                            });
+        // 4. Nhập hàng loạt từ file Word (.docx)
+        [HttpPost("upload-word")]
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> UploadWord([FromForm] UploadExcelRequest request, [FromQuery] int subjectId)
+        {
+            try
+            {
+                if (request.File == null || !request.File.FileName.EndsWith(".docx")) return BadRequest("Vui lòng chọn file .docx!");
 
-                            newQuestion.Answers.Add(new Answer
-                            {
-                                Text = row.OptionC ?? "",
-                                IsCorrect = correctLetter == "C"
-                            });
+                string fullText = "";
+                using (var stream = request.File.OpenReadStream())
+                using (WordprocessingDocument wordDoc = WordprocessingDocument.Open(stream, false))
+                {
+                    var paragraphs = wordDoc.MainDocumentPart!.Document!.Body!.Elements<Paragraph>().Select(p => p.InnerText);
+                    fullText = string.Join("\n", paragraphs);
+                }
 
-                            newQuestion.Answers.Add(new Answer
-                            {
-                                Text = row.OptionD ?? "",
-                                IsCorrect = correctLetter == "D"
-                            });
+                string[] blocks = Regex.Split(fullText, @"Câu\s+\d+\s*:", RegexOptions.IgnoreCase);
+                int successCount = 0;
 
-                            _context.Questions.Add(newQuestion);
-                        }
-                        Console.WriteLine("2");
-                        await _context.SaveChangesAsync();
-                        Console.WriteLine("3");
-                        return Ok(new
+                foreach (var block in blocks)
+                {
+                    if (string.IsNullOrWhiteSpace(block)) continue;
+                    var matchContent = Regex.Match(block, @"^(.*?)(?=A\.)", RegexOptions.Singleline);
+                    var matchA = Regex.Match(block, @"A\.(.*?)(?=B\.)", RegexOptions.Singleline);
+                    var matchB = Regex.Match(block, @"B\.(.*?)(?=C\.)", RegexOptions.Singleline);
+                    var matchC = Regex.Match(block, @"C\.(.*?)(?=D\.)", RegexOptions.Singleline);
+                    var matchD = Regex.Match(block, @"D\.(.*?)(?=Đáp án:)", RegexOptions.Singleline | RegexOptions.IgnoreCase);
+                    var matchCorrect = Regex.Match(block, @"Đáp án:\s*([A-D])", RegexOptions.IgnoreCase);
+
+                    if (matchContent.Success && matchCorrect.Success)
+                    {
+                        var correctLetter = matchCorrect.Groups[1].Value.ToUpper();
+                        var newQuestion = new Question
                         {
-                            message = $"Thành công! Đã nhập {rows.Count} câu hỏi vào hệ thống AILEXBA."
-                        });
+                            Content = matchContent.Groups[1].Value.Trim(),
+                            SubjectId = subjectId,
+                            Answers = new List<Answer>
+                            {
+                                new Answer { Text = matchA.Groups[1].Value.Trim(), IsCorrect = correctLetter == "A" },
+                                new Answer { Text = matchB.Groups[1].Value.Trim(), IsCorrect = correctLetter == "B" },
+                                new Answer { Text = matchC.Groups[1].Value.Trim(), IsCorrect = correctLetter == "C" },
+                                new Answer { Text = matchD.Groups[1].Value.Trim(), IsCorrect = correctLetter == "D" }
+                            }
+                        };
+                        _context.Questions.Add(newQuestion);
+                        successCount++;
                     }
                 }
-                catch (Exception ex)
-                {
-                    return BadRequest(new
-                    {
-                        message = ex.Message
-                    });
-                }
+                await _context.SaveChangesAsync();
+                return Ok(new { message = $"Đã nhập {successCount} câu hỏi từ Word." });
             }
-            catch (Exception ex)
+            catch (Exception ex) { return BadRequest(new { message = ex.Message }); }
+        }
+
+        // ---------------------------------------------------------
+        // NHÓM EXPORT (XUẤT FILE)
+        // ---------------------------------------------------------
+
+        // 5. Xuất ngân hàng câu hỏi ra Excel
+        [HttpGet("export-excel/{subjectId}")]
+        public async Task<IActionResult> ExportExcel(int subjectId)
+        {
+            var questions = await _context.Questions.Where(q => q.SubjectId == subjectId).Include(q => q.Answers).ToListAsync();
+            if (!questions.Any()) return NotFound("Không có dữ liệu.");
+
+            var exportData = questions.Select(q => new {
+                Content = q.Content,
+                OptionA = q.Answers.ElementAtOrDefault(0)?.Text,
+                OptionB = q.Answers.ElementAtOrDefault(1)?.Text,
+                OptionC = q.Answers.ElementAtOrDefault(2)?.Text,
+                OptionD = q.Answers.ElementAtOrDefault(3)?.Text,
+                CorrectOption = ((char)(65 + q.Answers.ToList().FindIndex(a => a.IsCorrect))).ToString()
+            });
+
+            var memoryStream = new MemoryStream();
+            memoryStream.SaveAs(exportData);
+            memoryStream.Seek(0, SeekOrigin.Begin);
+            return File(memoryStream, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"Questions_Subject_{subjectId}.xlsx");
+        }
+
+        // 6. Xuất ngân hàng câu hỏi ra Word
+        [HttpGet("export-word/{subjectId}")]
+        public async Task<IActionResult> ExportWord(int subjectId)
+        {
+            var questions = await _context.Questions.Where(q => q.SubjectId == subjectId).Include(q => q.Answers).ToListAsync();
+            if (!questions.Any()) return NotFound("Không có dữ liệu.");
+
+            var memoryStream = new MemoryStream();
+            using (WordprocessingDocument wordDoc = WordprocessingDocument.Create(memoryStream, DocumentFormat.OpenXml.WordprocessingDocumentType.Document))
             {
-                Console.WriteLine(ex.ToString());
-                return BadRequest(new
+                MainDocumentPart mainPart = wordDoc.AddMainDocumentPart();
+                mainPart.Document = new Document(new Body());
+                Body body = mainPart.Document.Body!;
+
+                int i = 1;
+                foreach (var q in questions)
                 {
-                    message = ex.ToString()
-                });
+                    body.AppendChild(new Paragraph(new Run(new Text($"Câu {i}: {q.Content}"))));
+                    char label = 'A';
+                    foreach (var ans in q.Answers)
+                    {
+                        body.AppendChild(new Paragraph(new Run(new Text($"{label}. {ans.Text}"))));
+                        label++;
+                    }
+                    var correctIdx = q.Answers.ToList().FindIndex(a => a.IsCorrect);
+                    body.AppendChild(new Paragraph(new Run(new Text($"Đáp án: {(char)(65 + correctIdx)}")) { RunProperties = new RunProperties(new Bold()) }));
+                    body.AppendChild(new Paragraph(new Run(new Text(""))));
+                    i++;
+                }
+                mainPart.Document.Save();
             }
+            memoryStream.Seek(0, SeekOrigin.Begin);
+            return File(memoryStream, "application/vnd.openxmlformats-officedocument.wordprocessingml.document", $"Questions_Subject_{subjectId}.docx");
         }
     }
-
-    // --- LỚP TRUNG GIAN ĐỂ ĐỌC EXCEL (DTO) ---
-    // Quốc có thể để ngay dưới này cho tiện hoặc chuyển sang folder DTOs
     public class QuestionExcelModel
     {
         public string? Content { get; set; }

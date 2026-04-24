@@ -1,9 +1,12 @@
-﻿using alilexba_backend.Data;
-using alilexba_backend.DTOs;
-using alilexba_backend.Models;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using alilexba_backend.Data;
+using alilexba_backend.Models;
+using alilexba_backend.DTOs;
+using System.Linq;
 using System.Threading.Tasks;
+using System;
+using System.Collections.Generic;
 
 namespace alilexba_backend.Controllers
 {
@@ -18,126 +21,141 @@ namespace alilexba_backend.Controllers
             _context = context;
         }
 
-        #region --- QUẢN LÝ ĐỀ THI (ADMIN & USER) ---
+        // ==========================================
+        // PB18: ADMIN - QUẢN LÝ ĐỀ THI
+        // ==========================================
 
-        // PB09: Lấy danh sách tất cả đề thi
+        // 1. Lấy danh sách đề thi (Cho Admin)
         [HttpGet]
-        public async Task<IActionResult> GetExams()
+        public async Task<IActionResult> GetAllExams()
         {
-            var exams = await _context.Exams.ToListAsync();
+            var exams = await _context.Exams
+                .Include(e => e.Subject)
+                .Select(e => new {
+                    e.Id,
+                    e.Title,
+                    e.Duration,
+                    e.SubjectId,
+                    SubjectName = e.Subject !.Name
+                })
+                .ToListAsync();
             return Ok(exams);
         }
 
-        // PB09: Tìm kiếm và Lọc đề thi theo Môn học hoặc Tiêu đề
-        [HttpGet("search")]
-        public async Task<IActionResult> SearchExams([FromQuery] int? subjectId, [FromQuery] string? title)
+        // 2. Tạo đề thi bằng cách BỐC NGẪU NHIÊN câu hỏi từ Ngân hàng
+        [HttpPost("create-random")]
+        public async Task<IActionResult> CreateRandomExam([FromBody] CreateExamRequest request)
         {
-            var query = _context.Exams.AsQueryable();
+            // Kiểm tra xem môn học có đủ câu hỏi không
+            var availableQuestions = await _context.Questions
+                .Where(q => q.SubjectId == request.SubjectId)
+                .ToListAsync();
 
-            if (subjectId.HasValue)
-                query = query.Where(e => e.SubjectId == subjectId);
+            if (availableQuestions.Count < request.QuestionCount)
+            {
+                return BadRequest(new
+                {
+                    message = $"Môn học này chỉ có {availableQuestions.Count} câu hỏi, không đủ để tạo đề {request.QuestionCount} câu."
+                });
+            }
 
-            if (!string.IsNullOrEmpty(title))
-                query = query.Where(e => e.Title.Contains(title));
+            // Bốc ngẫu nhiên câu hỏi (Sắp xếp theo GUID ngẫu nhiên)
+            var randomQuestions = availableQuestions
+                .OrderBy(q => Guid.NewGuid())
+                .Take(request.QuestionCount)
+                .ToList();
 
-            var results = await query.ToListAsync();
-            return Ok(results);
-        }
+            var newExam = new Exam
+            {
+                Title = request.Title,
+                SubjectId = request.SubjectId,
+                Duration = request.Duration,
+                Questions = randomQuestions // Giả sử model Exam của bạn có ICollection<Question> Questions
+            };
 
-        // PB16: Admin tạo mới đề thi
-        [HttpPost]
-        public async Task<IActionResult> CreateExam([FromBody] Exam exam)
-        {
-            _context.Exams.Add(exam);
+            _context.Exams.Add(newExam);
             await _context.SaveChangesAsync();
-            return Ok(new { message = "Tạo đề thi thành công!", examId = exam.Id });
+
+            return Ok(new { message = "Tạo đề thi ngẫu nhiên thành công!", examId = newExam.Id });
         }
 
-        // PB16: Admin cập nhật đề thi
-        [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateExam(int id, [FromBody] Exam exam)
+
+        // ==========================================
+        // PB12: USER - LÀM BÀI THI & CHẤM ĐIỂM
+        // ==========================================
+
+        // 3. User: Lấy đề thi để làm (CHE ĐÁP ÁN ĐÚNG)
+        [HttpGet("{id}/take")]
+        public async Task<IActionResult> GetExamForTaking(int id)
         {
-            var existingExam = await _context.Exams.FindAsync(id);
-            if (existingExam == null) return NotFound(new { message = "Không tìm thấy đề thi." });
+            var exam = await _context.Exams
+                .Include(e => e.Questions)
+                    .ThenInclude(q => q.Answers)
+                .FirstOrDefaultAsync(e => e.Id == id);
 
-            existingExam.Title = exam.Title;
-            existingExam.DurationMinutes = exam.DurationMinutes;
-            existingExam.IsActive = exam.IsActive;
+            if (exam == null) return NotFound(new { message = "Không tìm thấy đề thi." });
 
-            await _context.SaveChangesAsync();
-            return Ok(new { message = "Cập nhật đề thi thành công!" });
+            // MAP SANG DỮ LIỆU ẨN DANH (Không trả về trường IsCorrect)
+            var safeExamData = new
+            {
+                exam.Id,
+                exam.Title,
+                exam.Duration,
+                Questions = exam.Questions.Select(q => new
+                {
+                    q.Id,
+                    q.Content,
+                    Answers = q.Answers.Select(a => new { a.Id, a.Text }).ToList() // Chỉ trả về Text, KHÔNG có IsCorrect
+                }).ToList()
+            };
+
+            return Ok(safeExamData);
         }
 
-        // PB16: Admin xóa đề thi
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteExam(int id)
-        {
-            var exam = await _context.Exams.FindAsync(id);
-            if (exam == null) return NotFound(new { message = "Đề thi không tồn tại." });
-
-            _context.Exams.Remove(exam);
-            await _context.SaveChangesAsync();
-            return Ok(new { message = "Xóa đề thi thành công!" });
-        }
-
-        #endregion
-
-        #region --- LOGIC THI VÀ KẾT QUẢ ---
-
-        // PB11: Nộp bài thi và Chấm điểm tự động
+        // 4. User: Nộp bài & Tự động chấm điểm
         [HttpPost("submit")]
         public async Task<IActionResult> SubmitExam([FromBody] SubmitExamRequest request)
         {
-            // 1. Xử lý trường hợp nộp bài trắng (Edge Case)
-            if (request.Answers == null || !request.Answers.Any())
-            {
-                var zeroResult = new ExamResult
-                {
-                    UserId = request.UserId,
-                    ExamId = request.ExamId,
-                    Score = 0,
-                    CorrectAnswers = 0,
-                    TotalQuestions = 0
-                };
-                _context.ExamResults.Add(zeroResult);
-                await _context.SaveChangesAsync();
-                return Ok(new { Message = "Bạn đã nộp bài trắng!", Score = 0, Correct = 0 });
-            }
-
-            // 2. Lấy thông tin đề thi kèm đáp án đúng
             var exam = await _context.Exams
                 .Include(e => e.Questions)
                     .ThenInclude(q => q.Answers)
                 .FirstOrDefaultAsync(e => e.Id == request.ExamId);
 
-            if (exam == null) return NotFound("Không tìm thấy đề thi!");
+            if (exam == null) return NotFound(new { message = "Đề thi không hợp lệ." });
 
             int correctCount = 0;
-            int total = exam.Questions.Count;
+            int totalQuestions = exam.Questions.Count;
 
-            // 3. Chấm điểm logic
-            foreach (var userAnswer in request.Answers)
+            // Thuật toán chấm điểm
+            foreach (var studentAns in request.Answers)
             {
-                var question = exam.Questions.FirstOrDefault(q => q.Id == userAnswer.QuestionId);
+                var question = exam.Questions.FirstOrDefault(q => q.Id == studentAns.QuestionId);
                 if (question != null)
                 {
-                    // So khớp Id đáp án đã chọn với bảng Answers (IsCorrect == true)
-                    var isCorrect = question.Answers.Any(a => a.Id == userAnswer.SelectedAnswerId && a.IsCorrect);
-                    if (isCorrect) correctCount++;
+                    // Lấy đáp án đúng thực sự từ Database
+                    var correctAnswer = question.Answers.FirstOrDefault(a => a.IsCorrect);
+
+                    // So sánh với lựa chọn của sinh viên
+                    if (correctAnswer != null && correctAnswer.Id == studentAns.SelectedAnswerId)
+                    {
+                        correctCount++;
+                    }
                 }
             }
 
-            // 4. Tính điểm hệ 10
-            double finalScore = total > 0 ? Math.Round(((double)correctCount / total) * 10, 2) : 0;
+            // Tính điểm hệ 10 (Làm tròn 2 chữ số thập phân)
+            double rawScore = (double)correctCount / totalQuestions * 10;
+            double finalScore = Math.Round(rawScore, 2);
 
-            // 5. Lưu kết quả vào Database
+            // Lưu vào bảng ExamResult
             var result = new ExamResult
             {
                 UserId = request.UserId,
                 ExamId = request.ExamId,
                 Score = finalScore,
                 CorrectAnswers = correctCount,
-                TotalQuestions = total
+                TotalQuestions = totalQuestions,
+                TakenAt = DateTime.UtcNow // Thời gian nộp bài
             };
 
             _context.ExamResults.Add(result);
@@ -145,26 +163,39 @@ namespace alilexba_backend.Controllers
 
             return Ok(new
             {
-                Message = "Nộp bài thành công!",
-                Score = finalScore,
-                Correct = correctCount,
-                Total = total
+                message = "Nộp bài thành công!",
+                score = finalScore,
+                correctCount = correctCount,
+                total = totalQuestions
             });
         }
 
-        // PB14: Xem lịch sử thi của sinh viên
+
+        // ==========================================
+        // PB13: USER - LỊCH SỬ THI
+        // ==========================================
+
+        // 5. User: Xem danh sách bài đã làm
         [HttpGet("history/{userId}")]
-        public async Task<IActionResult> GetExamHistory(int userId)
+        public async Task<IActionResult> GetUserHistory(int userId)
         {
             var history = await _context.ExamResults
-                .Where(r => r.UserId == userId)
-                .Include(r => r.Exam)
-                .OrderByDescending(r => r.CompletedAt)
+                .Include(er => er.Exam !)
+                    .ThenInclude(e => e.Subject)
+                .Where(er => er.UserId == userId)
+                .OrderByDescending(er => er.TakenAt)
+                .Select(er => new {
+                    er.Id,
+                    ExamTitle = er.Exam!.Title,
+                    SubjectName = er.Exam !.Subject!.Name,
+                    er.Score,
+                    er.CorrectAnswers,
+                    er.TotalQuestions,
+                    er.TakenAt
+                })
                 .ToListAsync();
 
             return Ok(history);
         }
-
-        #endregion
     }
 }

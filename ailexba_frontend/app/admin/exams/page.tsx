@@ -153,7 +153,7 @@ export default function AdminExam() {
         error instanceof Error ? error.message : "Xóa đề thi thất bại";
       alert(message);
     }
-  };
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">

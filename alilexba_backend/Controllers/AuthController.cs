@@ -4,6 +4,7 @@ using alilexba_backend.Models;
 using alilexba_backend.DTOs;
 using Microsoft.EntityFrameworkCore;
 using System.Threading.Tasks;
+using System; // Cần thêm System để dùng hàm Random tạo số
 
 namespace alilexba_backend.Controllers
 {
@@ -20,7 +21,7 @@ namespace alilexba_backend.Controllers
 
         // PB04: Đăng ký tài khoản
         [HttpPost("register")]
-        public async Task<IActionResult> Register([FromBody] RegisterRequest request)
+        public async Task<IActionResult> Register([FromBody] alilexba_backend.DTOs.RegisterRequest request)
         {
             if (await _context.Users.AnyAsync(u => u.Email == request.Email))
             {
@@ -44,7 +45,7 @@ namespace alilexba_backend.Controllers
 
         // PB05: Đăng nhập hệ thống
         [HttpPost("login")]
-        public async Task<IActionResult> Login([FromBody] LoginRequest request)
+        public async Task<IActionResult> Login([FromBody] alilexba_backend.DTOs.LoginRequest request)
         {
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
 
@@ -69,7 +70,7 @@ namespace alilexba_backend.Controllers
 
         // PB06: Đổi mật khẩu
         [HttpPost("change-password")]
-        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
+        public async Task<IActionResult> ChangePassword([FromBody] alilexba_backend.DTOs.ChangePasswordRequest request)
         {
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
 
@@ -89,6 +90,35 @@ namespace alilexba_backend.Controllers
             await _context.SaveChangesAsync();
 
             return Ok(new { message = "Cập nhật mật khẩu thành công!" });
+        }
+
+        // PB07: Quên mật khẩu
+        [HttpPost("forgot-password")]
+        public async Task<IActionResult> ForgotPassword([FromBody] alilexba_backend.DTOs.ForgotPasswordRequest request)
+        {
+            // 1. Kiểm tra xem email có trong hệ thống không
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
+
+            if (user == null)
+            {
+                return NotFound(new { message = "Email này không tồn tại trong hệ thống. Quốc kiểm tra lại nhé!" });
+            }
+
+            // 2. Tạo mật khẩu mới ngẫu nhiên (6 chữ số)
+            var random = new Random();
+            string newTempPassword = random.Next(100000, 999999).ToString();
+
+            // 3. Mã hóa và lưu mật khẩu mới vào Database
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newTempPassword);
+
+            _context.Users.Update(user);
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                message = $"Khôi phục thành công! Mật khẩu mới của bạn là: {newTempPassword}",
+                tempPassword = newTempPassword
+            });
         }
     }
 }
