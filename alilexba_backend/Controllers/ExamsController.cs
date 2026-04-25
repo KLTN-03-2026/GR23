@@ -197,5 +197,64 @@ namespace alilexba_backend.Controllers
 
             return Ok(history);
         }
+        // ==========================================
+        // Thêm sửa xóa 
+        // ==========================================
+        // 6. Admin: Cập nhật thông tin đề thi
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateExam(int id, [FromBody] Exam exam)
+        {
+            if (id != exam.Id)
+            {
+                return BadRequest(new { message = "ID không đồng nhất!" });
+            }
+
+            // Kiểm tra xem đề thi có tồn tại không
+            var existingExam = await _context.Exams.AnyAsync(e => e.Id == id);
+            if (!existingExam)
+            {
+                return NotFound(new { message = "Không tìm thấy đề thi để cập nhật." });
+            }
+
+            _context.Entry(exam).State = EntityState.Modified;
+
+            // Chặn không cho cập nhật các bảng liên quan (Questions/Results) qua hàm này 
+            // để tránh lỗi dữ liệu phức tạp
+            _context.Entry(exam).Property(x => x.CreatedAt).IsModified = false;
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                throw;
+            }
+
+            return Ok(new { message = "Cập nhật đề thi thành công!" });
+        }
+        // 7. Admin: Xóa đề thi
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteExam(int id)
+        {
+            var exam = await _context.Exams.FindAsync(id);
+            if (exam == null)
+            {
+                return NotFound(new { message = "Không tìm thấy đề thi." });
+            }
+
+            _context.Exams.Remove(exam);
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateException)
+            {
+                return BadRequest(new { message = "Không thể xóa đề thi này vì đã có dữ liệu kết quả thi liên kết." });
+            }
+
+            return Ok(new { message = "Đã xóa đề thi thành công!" });
+        }
     }
 }
