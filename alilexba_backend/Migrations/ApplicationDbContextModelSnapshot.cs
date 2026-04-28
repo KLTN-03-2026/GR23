@@ -116,6 +116,40 @@ namespace alilexba_backend.Migrations
                     b.ToTable("ExamResults");
                 });
 
+            modelBuilder.Entity("alilexba_backend.Models.ExamResultDetail", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("ExamResultDetailId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ExamResultId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsCorrect")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("QuestionId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SelectedAnswerId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExamResultDetailId");
+
+                    b.HasIndex("ExamResultId");
+
+                    b.HasIndex("QuestionId");
+
+                    b.ToTable("ExamResultDetails");
+                });
+
             modelBuilder.Entity("alilexba_backend.Models.Question", b =>
                 {
                     b.Property<int>("Id")
@@ -241,6 +275,29 @@ namespace alilexba_backend.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("alilexba_backend.Models.ExamResultDetail", b =>
+                {
+                    b.HasOne("alilexba_backend.Models.ExamResultDetail", null)
+                        .WithMany("Details")
+                        .HasForeignKey("ExamResultDetailId");
+
+                    b.HasOne("alilexba_backend.Models.ExamResult", "ExamResult")
+                        .WithMany("Details")
+                        .HasForeignKey("ExamResultId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("alilexba_backend.Models.Question", "Question")
+                        .WithMany()
+                        .HasForeignKey("QuestionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("ExamResult");
+
+                    b.Navigation("Question");
+                });
+
             modelBuilder.Entity("alilexba_backend.Models.Question", b =>
                 {
                     b.HasOne("alilexba_backend.Models.Exam", null)
@@ -261,6 +318,16 @@ namespace alilexba_backend.Migrations
                     b.Navigation("ExamResults");
 
                     b.Navigation("Questions");
+                });
+
+            modelBuilder.Entity("alilexba_backend.Models.ExamResult", b =>
+                {
+                    b.Navigation("Details");
+                });
+
+            modelBuilder.Entity("alilexba_backend.Models.ExamResultDetail", b =>
+                {
+                    b.Navigation("Details");
                 });
 
             modelBuilder.Entity("alilexba_backend.Models.Question", b =>
