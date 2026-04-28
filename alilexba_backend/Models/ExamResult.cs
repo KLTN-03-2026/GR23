@@ -1,7 +1,7 @@
 ﻿using System;
+using System.Collections.Generic; 
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
-
 namespace alilexba_backend.Models
 {
     public class ExamResult
@@ -31,5 +31,7 @@ namespace alilexba_backend.Models
 
         [JsonIgnore] // Chặn vòng lặp JSON từ Result -> Exam
         public virtual Exam? Exam { get; set; }
+
+        public virtual ICollection<ExamResultDetail> Details { get; set; } = new List<ExamResultDetail>();
     }
 }
