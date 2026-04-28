@@ -4,11 +4,13 @@ using alilexba_backend.Data;
 using alilexba_backend.Models;
 using System.Threading.Tasks;
 using System.Linq;
+using Microsoft.AspNetCore.Authorization; //
 
 namespace alilexba_backend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize(Roles = "Admin")] // - Chỉ tài khoản có Role là Admin mới có thể truy cập Controller này
     public class SubjectsController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
@@ -24,6 +26,8 @@ namespace alilexba_backend.Controllers
 
         // 1. Lấy danh sách môn học
         [HttpGet]
+        // Nếu bạn muốn sinh viên vẫn có thể xem danh sách môn học để chọn đề thi, 
+        // bạn có thể thêm [AllowAnonymous] hoặc chỉ để [Authorize] tại riêng hàm này.
         public async Task<IActionResult> GetSubjects()
         {
             var subjects = await _context.Subjects.ToListAsync();
