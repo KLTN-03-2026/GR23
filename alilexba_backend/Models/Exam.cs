@@ -20,6 +20,7 @@ namespace alilexba_backend.Models
         public int Duration { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public string Difficulty { get; set; } = "Trung bình";
 
         public bool IsActive { get; set; } = true;
 
