@@ -28,12 +28,22 @@ namespace alilexba_backend.Controllers
 
         // 1. Lấy toàn bộ câu hỏi kèm đáp án
         [HttpGet]
-        public async Task<IActionResult> GetQuestions()
+        public async Task<IActionResult> GetQuestions(int page = 1, int pageSize = 10, string? search = "")
         {
-            var questions = await _context.Questions
-                .Include(q => q.Answers)
+            var query = _context.Questions.Include(q => q.Subject).AsQueryable();
+
+            if (!string.IsNullOrEmpty(search))
+            {
+                query = query.Where(q => q.Content.Contains(search));
+            }
+
+            var totalItems = await query.CountAsync();
+            var questions = await query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
                 .ToListAsync();
-            return Ok(questions);
+
+            return Ok(new { questions, totalItems, page, pageSize });
         }
 
         // 2. Thêm câu hỏi lẻ thủ công
