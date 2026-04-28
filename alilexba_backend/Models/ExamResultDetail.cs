@@ -18,7 +18,9 @@ namespace alilexba_backend.Models
 
         [JsonIgnore]
         public virtual ExamResult? ExamResult { get; set; }
+        public int TimeSpent { get; set; }
 
         public virtual Question? Question { get; set; }
+       
     }
 }

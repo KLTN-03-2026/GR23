@@ -23,6 +23,7 @@ namespace alilexba_backend.DTOs
     public class StudentAnswerDTO
     {
         public int QuestionId { get; set; }
-        public int SelectedAnswerId { get; set; } // ID của đáp án mà sinh viên chọn
+        public int SelectedAnswerId { get; set; }
+        public int TimeSpent { get; set; }
     }
 }

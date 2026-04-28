@@ -100,7 +100,6 @@ namespace alilexba_backend.Controllers
             };
             return Ok(safeExamData);
         }
-
         [HttpPost("submit")]
         [Authorize]
         public async Task<IActionResult> SubmitExam([FromBody] SubmitExamRequest request)
@@ -122,17 +121,21 @@ namespace alilexba_backend.Controllers
             {
                 var question = exam.Questions.FirstOrDefault(q => q.Id == studentAns.QuestionId);
                 bool isCorrect = false;
+
                 if (question != null)
                 {
                     var correctAnswer = question.Answers.FirstOrDefault(a => a.IsCorrect);
                     isCorrect = (correctAnswer != null && correctAnswer.Id == studentAns.SelectedAnswerId);
                     if (isCorrect) correctCount++;
                 }
+
+                // Lưu thông tin chi tiết bao gồm thời gian làm bài (Phân tích hành vi)
                 details.Add(new ExamResultDetail
                 {
                     QuestionId = studentAns.QuestionId,
                     SelectedAnswerId = studentAns.SelectedAnswerId,
-                    IsCorrect = isCorrect
+                    IsCorrect = isCorrect,
+                    TimeSpent = studentAns.TimeSpent // Hết lỗi đỏ tại đây
                 });
             }
 
@@ -149,6 +152,7 @@ namespace alilexba_backend.Controllers
 
             _context.ExamResults.Add(result);
             await _context.SaveChangesAsync();
+
             return Ok(new { message = "Nộp bài thành công!", score = result.Score, resultId = result.Id });
         }
 

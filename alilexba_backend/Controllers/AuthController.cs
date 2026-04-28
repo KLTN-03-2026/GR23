@@ -10,7 +10,8 @@ using System.Security.Claims;
 using System.IdentityModel.Tokens.Jwt;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
-using Microsoft.Extensions.Configuration; 
+using Microsoft.Extensions.Configuration;
+using Microsoft.AspNetCore.Authorization;
 
 namespace alilexba_backend.Controllers
 {
@@ -27,13 +28,13 @@ namespace alilexba_backend.Controllers
             _configuration = configuration;
         }
 
-        // PB04: Đăng ký tài khoản
+        // PB06: Đăng ký tài khoản
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterRequest request)
         {
             if (await _context.Users.AnyAsync(u => u.Email == request.Email))
             {
-                return BadRequest(new { message = "Email này đã tồn tại. Quốc thử email khác nhé!" });
+                return BadRequest(new { message = "Tên đăng nhập hoặc email đã tồn tại." });
             }
 
             var user = new User
@@ -41,16 +42,16 @@ namespace alilexba_backend.Controllers
                 FullName = request.FullName,
                 Email = request.Email,
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
-                Role = "Student" // Mặc định là sinh viên
+                Role = "Student"
             };
 
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
 
-            return Ok(new { message = "Đăng ký thành công! Giờ Quốc có thể đăng nhập." });
+            return Ok(new { message = "Đăng ký tài khoản thành công." });
         }
 
-        // PB05: Đăng nhập hệ thống (Đã cập nhật JWT)
+        // PB07: Đăng nhập hệ thống
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
@@ -58,31 +59,27 @@ namespace alilexba_backend.Controllers
 
             if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
             {
-                return Unauthorized(new { message = "Email hoặc mật khẩu không chính xác." });
+                return Unauthorized(new { message = "Bạn nhập sai Username hoặc Password." });
             }
 
-            // --- 1. Tạo danh sách Claims (Thông tin định danh) ---
             var authClaims = new List<Claim>
             {
                 new Claim(ClaimTypes.Name, user.FullName),
                 new Claim(ClaimTypes.Email, user.Email),
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                new Claim(ClaimTypes.Role, user.Role), // Lưu Role để FE phân quyền
+                new Claim(ClaimTypes.Role, user.Role),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             };
 
-            // --- 2. Tạo Signing Key ---
             var jwtKey = _configuration["Jwt:Key"] ?? "Chuoi_Bi_Mat_Sieu_Dai_Va_An_Toan_De_Ky_Token_123456";
             var authSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
 
-            // --- 3. Cấu trúc Token ---
             var token = new JwtSecurityToken(
-                expires: DateTime.Now.AddHours(4), // Token hết hạn sau 4 tiếng
+                expires: DateTime.Now.AddHours(4),
                 claims: authClaims,
                 signingCredentials: new SigningCredentials(authSigningKey, SecurityAlgorithms.HmacSha256)
             );
 
-            // --- 4. Trả về Token và thông tin User ---
             return Ok(new
             {
                 message = "Đăng nhập thành công!",
@@ -97,31 +94,15 @@ namespace alilexba_backend.Controllers
             });
         }
 
-        // PB06: Đổi mật khẩu
-        [HttpPost("change-password")]
-        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
+        // PB08: Đăng xuất
+        [HttpPost("logout")]
+        [Authorize]
+        public IActionResult Logout()
         {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
-
-            if (user == null)
-            {
-                return NotFound(new { message = "Không tìm thấy tài khoản này." });
-            }
-
-            if (string.IsNullOrEmpty(request.OldPassword) || !BCrypt.Net.BCrypt.Verify(request.OldPassword, user.PasswordHash))
-            {
-                return BadRequest(new { message = "Mật khẩu cũ không chính xác." });
-            }
-
-            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
-
-            _context.Users.Update(user);
-            await _context.SaveChangesAsync();
-
-            return Ok(new { message = "Cập nhật mật khẩu thành công!" });
+            return Ok(new { message = "Đã đăng xuất thành công." });
         }
 
-        // PB07: Quên mật khẩu (Đã cập nhật bảo mật)
+        // PB09: Quên mật khẩu
         [HttpPost("forgot-password")]
         public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
         {
@@ -129,24 +110,17 @@ namespace alilexba_backend.Controllers
 
             if (user == null)
             {
-                return NotFound(new { message = "Email này không tồn tại trong hệ thống." });
+                return NotFound(new { message = "Tài khoản không tồn tại." });
             }
 
-            // Tạo mật khẩu tạm thời
             var random = new Random();
             string newTempPassword = random.Next(100000, 999999).ToString();
 
-            // Mã hóa và lưu vào DB
             user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newTempPassword);
             _context.Users.Update(user);
             await _context.SaveChangesAsync();
 
-            // LƯU Ý: Trong thực tế, bạn sẽ gửi `newTempPassword` qua Email tại đây.
-            // Không trả mật khẩu về Response để tránh rủi ro bảo mật.
-            return Ok(new
-            {
-                message = "Khôi phục thành công! Một mật khẩu mới đã được khởi tạo cho tài khoản của bạn. Vui lòng liên hệ quản trị viên hoặc kiểm tra email (nếu có)."
-            });
+            return Ok(new { message = "Đặt lại mật khẩu thành công." });
         }
     }
 }

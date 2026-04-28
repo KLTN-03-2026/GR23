@@ -1,11 +1,13 @@
 ﻿using alilexba_backend.Data;
+using alilexba_backend.Services; //  NHẬN DIỆN AISERVICE
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json.Serialization;
 using System.Text.Json;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
-using Microsoft.OpenApi.Models; 
+using Microsoft.OpenApi.Models;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // --- 1. Cấu hình Database ---
@@ -14,7 +16,6 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
 
 // --- 2. Cấu hình JWT Authentication ---
-// Lấy Key từ appsettings.json, nếu không có sẽ dùng giá trị mặc định
 var jwtKey = builder.Configuration["Jwt:Key"] ?? "Chuoi_Bi_Mat_Sieu_Dai_Va_An_Toan_De_Ky_Token_123456";
 var keyBytes = Encoding.UTF8.GetBytes(jwtKey);
 
@@ -35,15 +36,15 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-// --- 3. Cấu hình CORS ---
-    builder.Services.AddCors(options => {
-        options.AddPolicy("AllowNextJS",
-            policy => policy.WithOrigins("http://localhost:3000")
-                            .AllowAnyMethod()
-                            .AllowAnyHeader());
-    });
+// --- 3. Cấu hình CORS (Để khớp với Frontend Next.js) ---
+builder.Services.AddCors(options => {
+    options.AddPolicy("AllowNextJS",
+        policy => policy.WithOrigins("http://localhost:3000")
+                        .AllowAnyMethod()
+                        .AllowAnyHeader());
+});
 
-// --- 4. Cấu hình Controllers & JSON ---
+// --- 4. Cấu hình Controllers, JSON & Services ---
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
@@ -51,12 +52,14 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
     });
 
+// 2. ĐĂNG KÝ AISERVICE TẠI ĐÂY (PHẢI TRƯỚC BUILDER.BUILD)
+builder.Services.AddScoped<AIService>();
+
 builder.Services.AddEndpointsApiExplorer();
 
-// Cấu hình Swagger với ổ khóa bảo mật
+// Cấu hình Swagger
 builder.Services.AddSwaggerGen(c => {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "AILEXBA API", Version = "v1" });
-
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         In = ParameterLocation.Header,
@@ -65,7 +68,6 @@ builder.Services.AddSwaggerGen(c => {
         Type = SecuritySchemeType.ApiKey,
         Scheme = "Bearer"
     });
-
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
         {
@@ -80,8 +82,9 @@ builder.Services.AddSwaggerGen(c => {
 
 var app = builder.Build();
 
-// --- 5. Pipeline xử lý Request (Thứ tự cực kỳ quan trọng) ---
-app.UseCors("AllowReact");
+// --- 5. Pipeline xử lý Request ---
+// 3. ĐÃ SỬA: Dùng đúng tên chính sách "AllowNextJS"
+app.UseCors("AllowNextJS");
 
 if (app.Environment.IsDevelopment())
 {
@@ -90,8 +93,6 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
-// Bắt buộc: Authentication đứng trước Authorization
 app.UseAuthentication();
 app.UseAuthorization();
 

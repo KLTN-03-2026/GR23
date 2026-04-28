@@ -13,6 +13,7 @@ namespace alilexba_backend.Models
 
         public int ExamId { get; set; }
 
+
         public double Score { get; set; } // Điểm số hệ 10
 
         public int CorrectAnswers { get; set; } // Số câu đúng
