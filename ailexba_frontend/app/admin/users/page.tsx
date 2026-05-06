@@ -89,21 +89,13 @@ export default function UsersPage() {
 
   const handleSave = async () => {
     try {
-      const config = selectedUser
-        ? {
-            url: `https://localhost:7083/api/Users/${selectedUser.id}`,
-            method: "PUT",
-          }
-        : { url: "https://localhost:7083/api/Users", method: "POST" };
-
-      await api.post(config.url, {
-        method: config.method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(
-          selectedUser ? formData : { ...formData, password: "123456" },
-        ),
-      });
-      window.location.reload();
+      if(selectedUser){
+         await api.put(`https://localhost:7083/api/Users/admin-update/${selectedUser.id}`, formData);
+      } else {
+         await api.post(`https://localhost:7083/api/Users`, { ...formData, password: "123456" });
+      }
+     
+     window.location.reload();
     } catch {
       alert("Lưu thất bại");
     }

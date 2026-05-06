@@ -116,13 +116,7 @@ export default function QuestionsPage() {
         ],
       };
 
-      const response = await api.post(`${API_URL}/api/Questions`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
+      const response = await api.post(`${API_URL}/api/Questions`, payload);
 
       const data = await response.data;
 

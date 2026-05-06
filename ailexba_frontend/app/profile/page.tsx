@@ -42,13 +42,7 @@ export default function ProfilePage() {
     const response = await api.put(
       `https://localhost:7083/api/Users/${user.userId}/profile`,
       {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          fullName: profileForm.fullName
-        })
+        fullName: profileForm.fullName
       }
     );
 
@@ -84,14 +78,8 @@ export default function ProfilePage() {
       const response = await api.put(
   `https://localhost:7083/api/Users/${user.userId}/change-password`,
   {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      oldPassword: passwordForm.currentPassword,
-      newPassword: passwordForm.newPassword
-    })
+    oldPassword: passwordForm.currentPassword,
+    newPassword: passwordForm.newPassword
   }
 );
 

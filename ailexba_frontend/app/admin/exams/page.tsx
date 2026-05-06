@@ -101,26 +101,18 @@ export default function AdminExam() {
         response = await api.put(
           `https://localhost:7083/api/Exams/${selectedExam.id}`,
           {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
               title: formData.title,
               durationMinutes: formData.durationMinutes,
               isActive: formData.isActive,
-            }),
-          },
+          }
         );
       } else {
         response = await api.post("https://localhost:7083/api/Exams", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
             title: formData.title,
             description: formData.description,
             durationMinutes: formData.durationMinutes,
             subjectId: formData.subjectId,
             isActive: formData.isActive,
-          }),
         });
       }
 
