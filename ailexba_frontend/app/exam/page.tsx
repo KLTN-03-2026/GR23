@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import api from "@/services/common"
 
 interface ExamItem {
   id: number;
@@ -35,13 +36,13 @@ export default function ExamsPage() {
 
   const loadExams = async () => {
     try {
-      const response = await fetch('https://localhost:7083/api/Exams');
+      const response = await api.get('https://localhost:7083/api/Exams');
 
-      if (!response.ok) {
+      if (response.status != 200) {
         throw new Error('Không thể tải danh sách đề thi');
       }
 
-      const result = await response.json();
+      const result = await response.data;
 
       setExams(result);
       setFilteredExams(result);

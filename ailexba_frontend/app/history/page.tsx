@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 // Quốc nhớ kiểm tra đường dẫn import authService cho đúng với dự án của bạn nhé
 import { authService } from '../../services/auth.service'; 
+import api from "@/services/common"
 
 interface ResultItem {
   id: number;
@@ -28,13 +29,13 @@ export default function HistoryPage() {
         }
 
         // 2. GỌI ĐÚNG ĐỊA CHỈ API (Theo Swagger của Quốc)
-        const response = await fetch(`https://localhost:7083/api/Exams/history/${user.userId}`);
+        const response = await api.get(`https://localhost:7083/api/Exams/history/${user.userId}`);
 
-        if (!response.ok) {
+        if (response.status != 200) {
           throw new Error('Không thể tải dữ liệu từ máy chủ');
         }
 
-        const result = await response.json();
+        const result = await response.data;
         
         // Console log để Quốc kiểm tra tên các trường (Title, Score, Date...)
         console.log("Dữ liệu lịch sử nhận được:", result);

@@ -1,6 +1,7 @@
 "use client";
 import { authService } from "@/services/auth.service";
 import { useEffect, useState } from "react";
+import api from "@/services/common"
 
 interface UserItem {
   id: number;
@@ -31,9 +32,9 @@ export default function UsersPage() {
 
     const loadUsers = async () => {
       try {
-        const response = await fetch("https://localhost:7083/api/Users");
-        if (!response.ok) throw new Error("Không thể tải danh sách người dùng");
-        const result = await response.json();
+        const response = await api.get("https://localhost:7083/api/Users");
+        if (response.status != 200) throw new Error("Không thể tải danh sách người dùng");
+        const result = await response.data;
         setUsers(result);
         setFilteredUsers(result);
       } catch (error) {
@@ -76,7 +77,7 @@ export default function UsersPage() {
   const handleDelete = async (id: number) => {
     if (!confirm("Bạn có chắc muốn xóa người dùng này?")) return;
     try {
-      await fetch(`https://localhost:7083/api/Users/${id}`, {
+      await api.delete(`https://localhost:7083/api/Users/${id}`, {
         method: "DELETE",
       });
       setUsers((prev) => prev.filter((user) => user.id !== id));
@@ -95,7 +96,7 @@ export default function UsersPage() {
           }
         : { url: "https://localhost:7083/api/Users", method: "POST" };
 
-      await fetch(config.url, {
+      await api.post(config.url, {
         method: config.method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(

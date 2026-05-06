@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { authService } from "@/services/auth.service";
+import api from "@/services/common"
 
 interface ExamItem {
   id: number;
@@ -52,14 +53,14 @@ export default function AdminExam() {
 
   const loadExams = async () => {
     try {
-      const response = await fetch("https://localhost:7083/api/Exams");
-      const text = await response.text();
-      let result = [];
-      try {
-        result = JSON.parse(text);
-      } catch {
-        console.error("API không trả về JSON");
-      }
+      const response = await api.get("https://localhost:7083/api/Exams");
+      const result = await response.data;
+      // let result = [];
+      // try {
+      //   result = JSON.parse(text);
+      // } catch {
+      //   console.error("API không trả về JSON");
+      // }
       setExams(result);
       setFilteredExams(result);
     } catch (error) {
@@ -97,7 +98,7 @@ export default function AdminExam() {
     try {
       let response;
       if (selectedExam) {
-        response = await fetch(
+        response = await api.put(
           `https://localhost:7083/api/Exams/${selectedExam.id}`,
           {
             method: "PUT",
@@ -110,7 +111,7 @@ export default function AdminExam() {
           },
         );
       } else {
-        response = await fetch("https://localhost:7083/api/Exams", {
+        response = await api.post("https://localhost:7083/api/Exams", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -123,8 +124,8 @@ export default function AdminExam() {
         });
       }
 
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message || "Lưu đề thi thất bại");
+      const data = await response.data;
+      if (response.status != 200) throw new Error(data.message || "Lưu đề thi thất bại");
 
       alert(data.message || "Lưu đề thi thành công");
       setShowModal(false);
@@ -140,11 +141,11 @@ export default function AdminExam() {
   const handleDelete = async (id: number) => {
     if (!confirm("Bạn có chắc muốn xóa đề thi này?")) return;
     try {
-      const response = await fetch(`https://localhost:7083/api/Exams/${id}`, {
+      const response = await api.delete(`https://localhost:7083/api/Exams/${id}`, {
         method: "DELETE",
       });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message || "Xóa đề thi thất bại");
+      const data = await response.data;
+      if (response.status != 200) throw new Error(data.message || "Xóa đề thi thất bại");
       alert(data.message || "Xóa đề thi thành công");
       loadExams();
     } catch (error: unknown) {

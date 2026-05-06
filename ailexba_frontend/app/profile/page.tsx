@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { authService } from '../../services/auth.service';
 import { Eye, EyeOff, Pencil, Save, Lock } from 'lucide-react';
+import api from '@/services/common';
 
 export default function ProfilePage() {
   const [user, setUser] = useState<any>(null);
@@ -38,7 +39,7 @@ export default function ProfilePage() {
 
   const handleUpdateProfile = async () => {
   try {
-    const response = await fetch(
+    const response = await api.put(
       `https://localhost:7083/api/Users/${user.userId}/profile`,
       {
         method: 'PUT',
@@ -51,9 +52,9 @@ export default function ProfilePage() {
       }
     );
 
-    const data = await response.json();
+    const data = await response.data;
 
-    if (!response.ok) {
+    if (response.status != 200) {
       throw new Error(data.message || 'Cập nhật thất bại');
     }
 
@@ -80,7 +81,7 @@ export default function ProfilePage() {
     }
 
     try {
-      const response = await fetch(
+      const response = await api.put(
   `https://localhost:7083/api/Users/${user.userId}/change-password`,
   {
     method: 'PUT',
@@ -94,17 +95,9 @@ export default function ProfilePage() {
   }
 );
 
-const text = await response.text();
+const data = await response.data;
 
-let data: any = {};
-
-try {
-  data = JSON.parse(text);
-} catch {
-  data = { message: text };
-}
-
-if (!response.ok) {
+if (response.status != 200) {
   console.log(data);
   throw new Error(data.message || 'Đổi mật khẩu thất bại');
 }

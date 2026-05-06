@@ -4,6 +4,7 @@ const API_URL = "https://localhost:7083";
 
 import { useEffect, useState } from "react";
 import { authService } from "@/services/auth.service";
+import api from "@/services/common"
 
 interface Answer {
   id?: number;
@@ -60,20 +61,12 @@ export default function QuestionsPage() {
 
   const loadQuestions = async () => {
     try {
-      const response = await fetch(`${API_URL}/api/Questions`);
+      const response = await api.get(`${API_URL}/api/Questions`);
 
-      const text = await response.text();
+      const result = await response.data;
 
-      let result: Question[] = [];
-
-      try {
-        result = JSON.parse(text);
-      } catch {
-        console.error("API không trả JSON");
-      }
-
-      setQuestions(result);
-      setFilteredQuestions(result);
+      setQuestions(result.questions);
+      setFilteredQuestions(result.questions);
     } catch (error) {
       console.error(error);
     } finally {
@@ -123,7 +116,7 @@ export default function QuestionsPage() {
         ],
       };
 
-      const response = await fetch(`${API_URL}/api/Questions`, {
+      const response = await api.post(`${API_URL}/api/Questions`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -131,9 +124,9 @@ export default function QuestionsPage() {
         body: JSON.stringify(payload),
       });
 
-      const data = await response.json();
+      const data = await response.data;
 
-      if (!response.ok) {
+      if (response.status != 200) {
         throw new Error(data.message || "Lưu câu hỏi thất bại");
       }
 
@@ -157,7 +150,7 @@ export default function QuestionsPage() {
       const excelFormData = new FormData();
       excelFormData.append("file", selectedFile);
 
-      const response = await fetch(
+      const response = await api.post(
         `${API_URL}/api/Questions/upload-excel?subjectId=${newQuestion.subjectId}`,
         {
           method: "POST",
@@ -165,12 +158,12 @@ export default function QuestionsPage() {
         },
       );
 
-      const text = await response.text();
+      const text = await response.data;
 
       console.log("Status:", response.status);
       console.log("Response:", text);
 
-      if (!response.ok) {
+      if (response.status != 200) {
         throw new Error(text || "Upload Excel thất bại");
       }
 

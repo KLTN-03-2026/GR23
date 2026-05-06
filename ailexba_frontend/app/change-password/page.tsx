@@ -2,8 +2,9 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import axios from 'axios';
 import { authService, UserData } from '../../services/auth.service';
+import axios,{ AxiosError } from "axios";
+import api from "@/services/common"
 
 export default function ChangePasswordPage() {
   const router = useRouter();
@@ -32,7 +33,7 @@ export default function ChangePasswordPage() {
 
     setLoading(true);
     try {
-      await axios.post(`https://localhost:7083/api/Auth/change-password`, {
+      await api.post(`https://localhost:7083/api/Auth/change-password`, {
         email: user?.email, 
         oldPassword: formData.oldPassword,
         newPassword: formData.newPassword

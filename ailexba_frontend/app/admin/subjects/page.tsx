@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import axios, { AxiosError } from "axios";
+import axios,{ AxiosError } from "axios";
 import {
   Plus,
   Search,
@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { authService } from "@/services/auth.service";
+import api from "@/services/common"
 
 const API_URL = "https://localhost:7083/api/Subjects";
 
@@ -40,7 +41,8 @@ export default function AdminSubjectsPage() {
   const fetchSubjects = async () => {
     setLoading(true);
     try {
-      const res = await axios.get<Subject[]>(API_URL);
+     
+      const res = await api.get<Subject[]>(API_URL);
       setSubjects(res.data);
     } catch {
       console.error("Lỗi lấy dữ liệu môn học từ Backend");
@@ -64,13 +66,13 @@ export default function AdminSubjectsPage() {
     e.preventDefault();
     try {
       if (editId) {
-        await axios.put(`${API_URL}/${editId}`, {
+        await api.put(`${API_URL}/${editId}`, {
           id: editId,
           ...formData,
         });
         alert("Cập nhật môn học thành công!");
       } else {
-        await axios.post(API_URL, formData);
+        await api.post(API_URL, formData);
         alert("Thêm môn học thành công!");
       }
       resetForm();
