@@ -1,9 +1,12 @@
 ﻿using alilexba_backend.Data;
+using alilexba_backend.DTOs;
 using alilexba_backend.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Linq;
 using System.Security.Claims;
+using System.Threading.Tasks;
 
 namespace alilexba_backend.Controllers
 {
@@ -24,14 +27,18 @@ namespace alilexba_backend.Controllers
         [HttpGet("predict-score")]
         public async Task<IActionResult> GetPrediction()
         {
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-            if (userIdClaim == null) return Unauthorized();
-
-            int userId = int.Parse(userIdClaim.Value);
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
             var history = await _context.ExamResults.Where(r => r.UserId == userId).ToListAsync();
 
-            var result = _aiService.PredictUserScore(history);
-            return result != null ? Ok(result) : BadRequest("Chưa đủ dữ liệu.");
+            var result = await _aiService.PredictUserScoreAsync(history);
+            return result != null ? Ok(result) : BadRequest("Chưa đủ dữ liệu để AI phân tích.");
+        }
+
+        [HttpPost("explain")]
+        public async Task<IActionResult> Explain([FromBody] ExplainRequest request)
+        {
+            var explanation = await _aiService.ExplainQuestionAsync(request.Question, request.UserAnswer, request.CorrectAnswer);
+            return Ok(new { explanation });
         }
     }
 }
