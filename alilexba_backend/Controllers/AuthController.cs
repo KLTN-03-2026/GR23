@@ -122,5 +122,6 @@ namespace alilexba_backend.Controllers
 
             return Ok(new { message = "Đặt lại mật khẩu thành công." });
         }
+       
     }
 }
