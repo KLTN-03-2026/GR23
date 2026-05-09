@@ -195,16 +195,21 @@ namespace alilexba_backend.Controllers
             var result = await _context.ExamResults
                 .Include(er => er.Exam)
                 .Include(er => er.Details!)
-                    .ThenInclude(d => d.Question)
+                    .ThenInclude(d => d.Question !)
                         .ThenInclude(q => q.Answers)
                 .FirstOrDefaultAsync(er => er.Id == resultId);
 
-            if (result == null) return NotFound(new { message = "Không tìm thấy dữ liệu bài thi." });
+            if (result == null)
+                return NotFound(new { message = "Không tìm thấy dữ liệu bài thi." });
 
-            // Kiểm tra bảo mật: Chỉ cho phép chủ nhân bài thi hoặc Admin xem chi tiết
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
-            if (result.UserId.ToString() != userIdClaim?.Value && userRole != "Admin")
+            // 1. Lấy giá trị trực tiếp và dùng dấu ! để khẳng định không null (vì đã có [Authorize])
+            // 2. Hoặc dùng toán tử kiểm tra an toàn để dập tắt Warning CS8602 hoàn toàn
+            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            var userRole = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+
+            // Kiểm tra bảo mật: 
+            // Nếu không lấy được userId từ Token HOẶC (ID không khớp VÀ không phải Admin) thì cấm truy cập
+            if (userId == null || (result.UserId.ToString() != userId && userRole != "Admin"))
             {
                 return Forbid();
             }
