@@ -82,7 +82,6 @@ builder.Services.AddSwaggerGen(c => {
 
 var app = builder.Build();
 //  5. Pipeline xử lý Request 
-// 3. ĐÃ SỬA: Dùng đúng tên chính sách "AllowNextJS"
 app.UseCors("AllowNextJS");
 
 if (app.Environment.IsDevelopment())
