@@ -1,12 +1,8 @@
 ﻿using alilexba_backend.DTOs;
 using alilexba_backend.Models;
+using alilexba_backend.Data;
 using Microsoft.Extensions.Configuration;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Net.Http.Json;
-using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 
 namespace alilexba_backend.Services
@@ -15,76 +11,108 @@ namespace alilexba_backend.Services
     {
         private readonly IConfiguration _configuration;
         private readonly HttpClient _httpClient;
+        private readonly ApplicationDbContext _context;
 
-        public AIService(IConfiguration configuration)
+        public AIService(IConfiguration configuration, ApplicationDbContext context)
         {
             _configuration = configuration;
+            _context = context;
             _httpClient = new HttpClient();
         }
 
-        // PB16: Giải thích câu hỏi (Sử dụng gọi trực tiếp API)
-        public async Task<string> ExplainQuestionAsync(string question, string userAnswer, string correctAnswer)
+        private async Task<string> CallGeminiAsync(string prompt)
         {
             try
             {
                 var apiKey = _configuration["Gemini:ApiKey"];
-                // Dùng endpoint v1 (ổn định nhất) thay vì v1beta
                 var url = $"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={apiKey}";
 
                 var requestBody = new
                 {
-                    contents = new[] {
-                        new { parts = new[] { new { text = $@"Bạn là chuyên gia luyện thi THPT Quốc gia của hệ thống AILEXBA. 
-                                Hãy giải thích ngắn gọn tại sao câu hỏi: '{question}' có đáp án đúng là '{correctAnswer}' thay vì '{userAnswer}'.
-                                Yêu cầu: Trình bày bằng tiếng Việt, dùng Markdown dấu đầu dòng." } } }
-                    }
+                    contents = new[] { new { parts = new[] { new { text = prompt } } } }
                 };
 
                 var response = await _httpClient.PostAsJsonAsync(url, requestBody);
-                var jsonResponse = await response.Content.ReadAsStringAsync();
+                if (!response.IsSuccessStatusCode) return "Dịch vụ AI đang bận, vui lòng thử lại sau.";
 
-                if (!response.IsSuccessStatusCode) return $"Lỗi API: {jsonResponse}";
-
-                using var doc = JsonDocument.Parse(jsonResponse);
-                return doc.RootElement.GetProperty("candidates")[0].GetProperty("content").GetProperty("parts")[0].GetProperty("text").GetString()
-                       ?? "AI không trả về nội dung.";
+                using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+                return doc.RootElement.GetProperty("candidates")[0].GetProperty("content").GetProperty("parts")[0].GetProperty("text").GetString() ?? "";
             }
-            catch (Exception ex)
-            {
-                return $"Lỗi hệ thống: {ex.Message}";
-            }
+            catch { return "Lỗi kết nối AI."; }
         }
 
-        // PB15: Dự đoán điểm số
-        public async Task<PredictScoreResponse> PredictUserScoreAsync(List<ExamResult> history)
+     
+        public async Task<string> ExplainDeepAsync(int resultDetailId)
         {
-            if (history == null || !history.Any()) return null!;
-            double avg = Math.Round(history.Average(h => h.Score), 2);
+            var detail = await _context.ExamResultDetails
+                .Include(d => d.Question)
+                    .ThenInclude(q => q!.Subject) 
+                .Include(d => d.Question)
+                    .ThenInclude(q => q!.Answers) 
+                .FirstOrDefaultAsync(d => d.Id == resultDetailId);
 
-            // Gọi AI để lấy nhận xét (Tương tự như hàm Explain trên)
-            string comment = "Cố gắng phát huy nhé!";
-            try
-            {
-                var apiKey = _configuration["Gemini:ApiKey"];
-                var url = $"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={apiKey}";
-                var body = new { contents = new[] { new { parts = new[] { new { text = $"Điểm trung bình của tôi là {avg}/10, hãy viết 1 câu nhận xét khích lệ ngắn." } } } } };
-                var response = await _httpClient.PostAsJsonAsync(url, body);
-                if (response.IsSuccessStatusCode)
-                {
-                    var json = await response.Content.ReadAsStringAsync();
-                    using var doc = JsonDocument.Parse(json);
-                    comment = doc.RootElement.GetProperty("candidates")[0].GetProperty("content").GetProperty("parts")[0].GetProperty("text").GetString() ?? comment;
-                }
-            }
-            catch { /* Nếu AI lỗi thì dùng comment mặc định */ }
+            // Kiểm tra null an toàn
+            if (detail == null || detail.Question == null) return "Không tìm thấy dữ liệu câu hỏi.";
+
+         
+            string subjectName = detail.Question.Subject?.Name ?? "Môn học tự do";
+            string correctAnswer = detail.Question.Answers?.FirstOrDefault(a => a.IsCorrect)?.Text ?? "Chưa xác định";
+
+            string prompt = $@"Bạn là chuyên gia giáo dục. Hãy giải thích câu hỏi môn {subjectName}.
+            - Nội dung: {detail.Question.Content}
+            - Đáp án đúng: {correctAnswer}
+            - Sinh viên đã làm trong: {detail.TimeSpent} giây.
+            {(detail.TimeSpent < 10 ? "Lưu ý: Sinh viên làm rất nhanh, có thể do cẩu thả." : "")}
+            Hãy giải thích ngắn gọn lý do chọn đáp án đúng và mẹo làm nhanh dạng bài này.";
+
+            return await CallGeminiAsync(prompt);
+        }
+
+   
+        public async Task<PredictScoreResponse> PredictEnhancedAsync(int userId)
+        {
+            var history = await _context.ExamResults
+                .Include(r => r.Details!)
+                    .ThenInclude(d => d.Question)
+                        .ThenInclude(q => q!.Subject)
+                .Where(r => r.UserId == userId)
+                .OrderByDescending(r => r.TakenAt)
+                .Take(10).ToListAsync();
+
+            if (history == null || !history.Any()) return null!;
+
+            var allDetails = history.SelectMany(h => h.Details ?? new List<ExamResultDetail>()).ToList();
+
+        
+            var weakTopics = allDetails
+                .Where(d => d.Question != null && d.Question.Subject != null && !d.IsCorrect)
+                .GroupBy(d => d.Question!.Subject!.Name) // Sử dụng "!" để khẳng định dữ liệu đã qua lọc null
+                .OrderByDescending(g => g.Count())
+                .Select(g => g.Key).Take(2).ToList();
+
+            double avgScore = history.Average(h => h.Score);
+            int carelessCount = allDetails.Count(d => !d.IsCorrect && d.TimeSpent < 15);
+
+            string aiPrompt = $@"Dựa trên kết quả học tập: Điểm TB {avgScore}/10. 
+            Môn yếu nhất: {string.Join(", ", weakTopics)}. 
+            Số câu sai do làm quá nhanh (<15s): {carelessCount}.
+            Hãy đưa ra 1 lời nhận xét chuyên môn về hành vi học tập này.";
 
             return new PredictScoreResponse
             {
-                PredictedScore = Math.Round(avg + 0.3, 2),
+                PredictedScore = Math.Round(avgScore + (carelessCount > 5 ? -0.5 : 0.2), 2),
                 StabilityLevel = history.Count > 5 ? "Cao" : "Trung bình",
-                AiComment = comment,
-                WeakTopics = new List<string> { "Đạo hàm", "Số phức" }
+                AiComment = await CallGeminiAsync(aiPrompt),
+                WeakTopics = weakTopics
             };
+        }
+
+        public async Task<string> ExplainQuestionAsync(string question, string userAnswer, string correctAnswer)
+        {
+            string prompt = $@"Bạn là chuyên gia luyện thi THPT Quốc gia của hệ thống AILEXBA. 
+                              Hãy giải thích ngắn gọn tại sao câu hỏi: '{question}' có đáp án đúng là '{correctAnswer}' thay vì '{userAnswer}'.
+                              Yêu cầu: Trình bày bằng tiếng Việt, dùng Markdown dấu đầu dòng.";
+            return await CallGeminiAsync(prompt);
         }
     }
 }

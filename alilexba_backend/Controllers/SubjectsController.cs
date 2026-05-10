@@ -4,13 +4,12 @@ using alilexba_backend.Data;
 using alilexba_backend.Models;
 using System.Threading.Tasks;
 using System.Linq;
-using Microsoft.AspNetCore.Authorization; //
-
+using Microsoft.AspNetCore.Authorization; 
 namespace alilexba_backend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize(Roles = "Admin")] // - Chỉ tài khoản có Role là Admin mới có thể truy cập Controller này
+    [Authorize(Roles = "Admin")] 
     public class SubjectsController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
@@ -19,15 +18,9 @@ namespace alilexba_backend.Controllers
         {
             _context = context;
         }
-
-        // ==========================================
         // PB20: QUẢN LÝ MÔN HỌC & CHUYÊN ĐỀ
-        // ==========================================
-
         // 1. Lấy danh sách môn học
         [HttpGet]
-        // Nếu bạn muốn sinh viên vẫn có thể xem danh sách môn học để chọn đề thi, 
-        // bạn có thể thêm [AllowAnonymous] hoặc chỉ để [Authorize] tại riêng hàm này.
         public async Task<IActionResult> GetSubjects()
         {
             var subjects = await _context.Subjects.ToListAsync();
@@ -93,12 +86,10 @@ namespace alilexba_backend.Controllers
 
             try
             {
-                // Nếu môn học đang chứa Câu hỏi/Đề thi, dòng này sẽ văng lỗi khóa ngoại
                 await _context.SaveChangesAsync();
             }
             catch (DbUpdateException)
             {
-                // Bắt lỗi và báo cho Frontend biết thay vì sập API
                 return BadRequest(new { message = "Không thể xóa môn học này vì đang có câu hỏi hoặc đề thi liên kết với nó." });
             }
 

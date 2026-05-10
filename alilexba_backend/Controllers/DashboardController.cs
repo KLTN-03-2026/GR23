@@ -1,7 +1,7 @@
 ﻿using alilexba_backend.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore; // Quan trọng: Phải có dòng này để dùng CountAsync
+using Microsoft.EntityFrameworkCore; 
 using System;
 using System.Linq;
 using System.Threading.Tasks;

@@ -24,10 +24,6 @@ namespace alilexba_backend.Models
 
         public bool IsActive { get; set; } = true;
 
-        // ==========================================
-        // KHU VỰC NAVIGATION PROPERTIES (LIÊN KẾT BẢNG)
-        // ==========================================
-
         // Liên kết N-1: 1 Đề thi thuộc về 1 Môn học
         public virtual Subject? Subject { get; set; }
 
@@ -36,5 +32,6 @@ namespace alilexba_backend.Models
 
         // Liên kết 1-N: 1 Đề thi có nhiều Kết quả thi (của nhiều sinh viên)
         public virtual ICollection<ExamResult> ExamResults { get; set; } = new List<ExamResult>();
+        public bool IsSample { get; set; } = false;
     }
 }

@@ -15,17 +15,17 @@ namespace alilexba_backend.Data
         public DbSet<ExamResult> ExamResults { get; set; }
         public DbSet<ExamResultDetail> ExamResultDetails { get; set; }
 
-        // --- THÊM ĐOẠN NÀY ĐỂ FIX LỖI ---
+       
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
-            // Cấu hình mối quan hệ giữa ExamResultDetail và Question
+           
             modelBuilder.Entity<ExamResultDetail>()
                 .HasOne(d => d.Question)
                 .WithMany()
                 .HasForeignKey(d => d.QuestionId)
-                .OnDelete(DeleteBehavior.Restrict); // Ngắt Cascade ở đây
+                .OnDelete(DeleteBehavior.Restrict); 
         }
     }
 }

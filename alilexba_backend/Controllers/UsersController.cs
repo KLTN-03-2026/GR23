@@ -18,11 +18,7 @@ namespace alilexba_backend.Controllers
         {
             _context = context;
         }
-
-        // ==========================================
         // KHU VỰC 1: DÀNH CHO ADMIN (PB19 - QUẢN LÝ NGƯỜI DÙNG)
-        // ==========================================
-
         // 1. Admin: Xem danh sách người dùng
         [HttpGet]
         public async Task<IActionResult> GetAllUsers()
@@ -93,12 +89,7 @@ namespace alilexba_backend.Controllers
             await _context.SaveChangesAsync();
             return Ok(new { message = "Xóa người dùng thành công." });
         }
-
-
-        // ==========================================
         // KHU VỰC 2: DÀNH CHO USER (PB10 & PB09 - CÁ NHÂN HÓA)
-        // ==========================================
-
         // 1. User: Xem thông tin cá nhân
         [HttpGet("{id}")]
         public async Task<IActionResult> GetProfile(int id)

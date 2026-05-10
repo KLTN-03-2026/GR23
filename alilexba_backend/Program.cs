@@ -1,5 +1,5 @@
 ﻿using alilexba_backend.Data;
-using alilexba_backend.Services; //  NHẬN DIỆN AISERVICE
+using alilexba_backend.Services; 
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json.Serialization;
 using System.Text.Json;
@@ -10,12 +10,12 @@ using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// --- 1. Cấu hình Database ---
+//  1. Cấu hình Database 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
 
-// --- 2. Cấu hình JWT Authentication ---
+//  2. Cấu hình JWT Authentication 
 var jwtKey = builder.Configuration["Jwt:Key"] ?? "Chuoi_Bi_Mat_Sieu_Dai_Va_An_Toan_De_Ky_Token_123456";
 var keyBytes = Encoding.UTF8.GetBytes(jwtKey);
 
@@ -36,7 +36,7 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-// --- 3. Cấu hình CORS (Để khớp với Frontend Next.js) ---
+// 3. Cấu hình CORS (Để khớp với Frontend Next.js) 
 builder.Services.AddCors(options => {
     options.AddPolicy("AllowNextJS",
         policy => policy.WithOrigins("http://localhost:3000")
@@ -44,7 +44,7 @@ builder.Services.AddCors(options => {
                         .AllowAnyHeader());
 });
 
-// --- 4. Cấu hình Controllers, JSON & Services ---
+//  4. Cấu hình Controllers, JSON & Services 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
@@ -81,8 +81,7 @@ builder.Services.AddSwaggerGen(c => {
 });
 
 var app = builder.Build();
-
-// --- 5. Pipeline xử lý Request ---
+//  5. Pipeline xử lý Request 
 // 3. ĐÃ SỬA: Dùng đúng tên chính sách "AllowNextJS"
 app.UseCors("AllowNextJS");
 

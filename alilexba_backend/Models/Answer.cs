@@ -1,5 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using System.Text.Json.Serialization; // Thư viện để xử lý JSON
+using System.Text.Json.Serialization; 
 
 namespace alilexba_backend.Models
 {
@@ -15,6 +15,6 @@ namespace alilexba_backend.Models
         public int QuestionId { get; set; }
 
         [JsonIgnore]
-        public Question? Question { get; set; } // Chặn không cho JSON quay ngược lại Question
+        public Question? Question { get; set; } 
     }
 }

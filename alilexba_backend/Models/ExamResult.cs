@@ -20,13 +20,11 @@ namespace alilexba_backend.Models
 
         public int TotalQuestions { get; set; } // Tổng số câu hỏi
 
-        // Sửa CompletedAt thành TakenAt để khớp với Controller
+  
         public DateTime TakenAt { get; set; } = DateTime.UtcNow;
 
-        // ==========================================
         // KHU VỰC LIÊN KẾT BẢNG (NAVIGATION)
-        // ==========================================
-
+ 
         [JsonIgnore] // Chặn vòng lặp JSON từ Result -> User
         public virtual User? User { get; set; }
 

@@ -19,11 +19,7 @@ namespace alilexba_backend.Controllers
         {
             _context = context;
         }
-
-        // ==========================================
         // ADMIN - QUẢN LÝ ĐỀ THI
-        // ==========================================
-
         [HttpGet]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetAllExams()
@@ -42,11 +38,7 @@ namespace alilexba_backend.Controllers
 
             return Ok(exams);
         }
-
-        // ==========================================
         // USER - XEM DANH SÁCH ĐỀ THI
-        // ==========================================
-
         [HttpGet("available")]
         [Authorize]
         public async Task<IActionResult> GetAvailableExams()
@@ -105,11 +97,7 @@ namespace alilexba_backend.Controllers
                 examId = newExam.Id
             });
         }
-
-        // ==========================================
         // USER - LÀM BÀI THI
-        // ==========================================
-
         [HttpGet("{id}/take")]
         [Authorize]
         public async Task<IActionResult> GetExamForTaking(int id)
@@ -239,11 +227,7 @@ namespace alilexba_backend.Controllers
                 resultId = result.Id
             });
         }
-
-        // ==========================================
         // LỊCH SỬ THI
-        // ==========================================
-
         [HttpGet("history")]
         [Authorize]
         public async Task<IActionResult> GetUserHistory()
@@ -276,11 +260,7 @@ namespace alilexba_backend.Controllers
 
             return Ok(history);
         }
-
-        // ==========================================
         // CHI TIẾT KẾT QUẢ
-        // ==========================================
-
         [HttpGet("result/{resultId}")]
         [Authorize]
         public async Task<IActionResult> GetResultDetail(int resultId)
@@ -304,11 +284,7 @@ namespace alilexba_backend.Controllers
 
             return Ok(result);
         }
-
-        // ==========================================
         // ADMIN - UPDATE / DELETE
-        // ==========================================
-
         [HttpPut("{id}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> UpdateExam(
@@ -372,10 +348,7 @@ namespace alilexba_backend.Controllers
             }
         }
 
-        // ==========================================
         // SEARCH
-        // ==========================================
-
         [HttpGet("search")]
         public async Task<IActionResult> SearchExams(
             [FromQuery] int? subjectId,
@@ -424,6 +397,29 @@ namespace alilexba_backend.Controllers
                 .ToListAsync();
 
             return Ok(result);
+        }
+        // PB05: Cho phép Khách (vãng lai) xem danh sách đề thi mẫu
+        [HttpGet("samples")]
+        [AllowAnonymous] 
+        public async Task<IActionResult> GetSampleExams()
+        {
+            // Lấy ra 3 đề thi bất kỳ làm mẫu hoặc các đề có đánh dấu là Sample
+            var sampleExams = await _context.Exams
+                .Include(e => e.Subject)
+                .Where(e => e.IsActive)
+                .Take(3)
+                .Select(e => new
+                {
+                    e.Id,
+                    e.Title,
+                    e.Duration,
+                    e.Difficulty,
+                    SubjectName = e.Subject!.Name,
+                    IsSample = true
+                })
+                .ToListAsync();
+
+            return Ok(sampleExams);
         }
     }
 }

@@ -10,7 +10,7 @@ namespace alilexba_backend.Models
 
         public int ExamResultId { get; set; } // Liên kết với bảng kết quả tổng
 
-        public int QuestionId { get; set; } // Câu hỏi nào?
+        public int QuestionId { get; set; } // Câu hỏi nào
 
         public int SelectedAnswerId { get; set; } // Sinh viên đã chọn đáp án nào?
 

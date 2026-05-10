@@ -57,11 +57,7 @@ namespace alilexba_backend.Controllers
             await _context.SaveChangesAsync();
             return Ok(new { message = "Đã thêm câu hỏi thành công!", questionId = question.Id });
         }
-
-        // ---------------------------------------------------------
         // NHÓM IMPORT (NHẬP FILE)
-        // ---------------------------------------------------------
-
         // 3. Nhập hàng loạt từ Excel
         [HttpPost("upload-excel")]
         [Consumes("multipart/form-data")]
@@ -154,11 +150,7 @@ namespace alilexba_backend.Controllers
             }
             catch (Exception ex) { return BadRequest(new { message = ex.Message }); }
         }
-
-        // ---------------------------------------------------------
         // NHÓM EXPORT (XUẤT FILE)
-        // ---------------------------------------------------------
-
         // 5. Xuất ngân hàng câu hỏi ra Excel
         [HttpGet("export-excel/{subjectId}")]
         public async Task<IActionResult> ExportExcel(int subjectId)
