@@ -90,7 +90,7 @@ export default function QuestionsPage() {
 
         const response =
           await api.get(
-            `${API_URL}/api/Questions`,
+            `Questions`,
             {
               headers: {
                 Authorization: `Bearer ${token}`,
@@ -204,7 +204,7 @@ export default function QuestionsPage() {
 
         const response =
           await api.post(
-            `${API_URL}/api/Questions`,
+            `Questions`,
             payload,
             {
               headers: {
@@ -270,7 +270,7 @@ export default function QuestionsPage() {
 
         const response =
           await api.post(
-            `${API_URL}/api/Questions/upload-excel?subjectId=${newQuestion.subjectId}`,
+            `Questions/upload-excel?subjectId=${newQuestion.subjectId}`,
             excelFormData,
             {
               headers: {

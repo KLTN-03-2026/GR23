@@ -40,7 +40,7 @@ export default function ProfilePage() {
   const handleUpdateProfile = async () => {
   try {
     const response = await api.put(
-      `https://localhost:7083/api/Users/${user.userId}/profile`,
+      `Users/${user.userId}/profile`,
       {
         fullName: profileForm.fullName
       }
@@ -76,7 +76,7 @@ export default function ProfilePage() {
 
     try {
       const response = await api.put(
-  `https://localhost:7083/api/Users/${user.userId}/change-password`,
+  `Users/${user.userId}/change-password`,
   {
     oldPassword: passwordForm.currentPassword,
     newPassword: passwordForm.newPassword

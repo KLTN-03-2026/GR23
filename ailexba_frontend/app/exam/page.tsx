@@ -42,7 +42,7 @@ export default function ExamsPage() {
       const token = localStorage.getItem('token');
 
       const response = await api.get(
-        'https://localhost:7083/api/Exams/available',
+        'Exams/available',
         {
           headers: {
             Authorization: `Bearer ${token}`,

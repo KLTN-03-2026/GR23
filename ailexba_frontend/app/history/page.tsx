@@ -34,7 +34,7 @@ export default function HistoryPage() {
           localStorage.getItem("token");
 
         const response = await api.get(
-          "https://localhost:7083/api/Exams/history",
+          "Exams/history",
           {
             headers: {
               Authorization: `Bearer ${token}`,
