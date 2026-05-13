@@ -19,8 +19,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { authService } from "@/services/auth.service";
 import api from "@/services/common";
 
-const API_URL = "https://localhost:7083/api/Subjects";
-
 interface Subject {
   id: number;
   name: string;
@@ -50,7 +48,7 @@ export default function AdminSubjectsPage() {
 
     try {
       const res = await api.get<Subject[]>(
-        API_URL
+        "Subjects"
       );
 
       setSubjects(res.data);
@@ -85,7 +83,7 @@ export default function AdminSubjectsPage() {
     try {
       if (editId) {
         await api.put(
-          `${API_URL}/${editId}`,
+          `Subjects/${editId}`,
           {
             id: editId,
             ...formData,
@@ -95,7 +93,7 @@ export default function AdminSubjectsPage() {
         alert("Cập nhật môn học thành công!");
       } else {
         await api.post(
-          API_URL,
+          'Subjects',
           formData
         );
 
@@ -132,7 +130,7 @@ export default function AdminSubjectsPage() {
 
     try {
       await axios.delete(
-        `${API_URL}/${id}`
+        `Subjects/${id}`
       );
 
       fetchSubjects();

@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "https://localhost:7083/api",
+  baseURL: `${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api`,
 });
 
 // Add Bearer Token automatically

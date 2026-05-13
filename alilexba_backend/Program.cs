@@ -11,7 +11,8 @@ using Microsoft.OpenApi.Models;
 var builder = WebApplication.CreateBuilder(args);
 
 //  1. Cấu hình Database 
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+// var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+var connectionString = Environment.GetEnvironmentVariable("CONNECTION_STRING"); 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
 

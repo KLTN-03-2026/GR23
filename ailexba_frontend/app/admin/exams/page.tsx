@@ -7,19 +7,19 @@ import api from "@/services/common";
 interface ExamItem {
   id: number;
   title: string;
-  description: string;
-  durationMinutes: number;
+  description?: string;
   subjectId: number;
-  isActive: boolean;
+  duration: number;
   createdAt: string;
+  difficulty?: string;
+  isActive: boolean;
 }
 
 export default function AdminExam() {
   const [exams, setExams] = useState<ExamItem[]>([]);
   const [filteredExams, setFilteredExams] = useState<ExamItem[]>([]);
-  const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
-
+  const [search, setSearch] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [selectedExam, setSelectedExam] =
     useState<ExamItem | null>(null);
@@ -27,8 +27,9 @@ export default function AdminExam() {
   const [formData, setFormData] = useState({
     title: "",
     description: "",
-    durationMinutes: 60,
     subjectId: 1,
+    duration: 60,
+    difficulty: "Easy",
     isActive: true,
   });
 
@@ -46,9 +47,9 @@ export default function AdminExam() {
 
     const filtered = exams.filter((exam) => {
       return (
-        exam.title?.toLowerCase().includes(keyword) ||
-        exam.subjectId?.toString().includes(keyword) ||
-        exam.id?.toString().includes(keyword)
+        exam.title.toLowerCase().includes(keyword) ||
+        exam.id.toString().includes(keyword) ||
+        exam.subjectId.toString().includes(keyword)
       );
     });
 
@@ -56,21 +57,60 @@ export default function AdminExam() {
   }, [search, exams]);
 
   const loadExams = async () => {
-    try {
-      const response = await api.get(
-        "https://localhost:7083/api/Exams"
-      );
+  try {
 
-      const result = response.data;
+    setLoading(true);
 
-      setExams(result);
-      setFilteredExams(result);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    const response = await api.get(
+      `Exams?_=${Date.now()}`
+    );
+
+    // CHECK DỮ LIỆU THẬT TỪ DB
+    console.log("API DATA:", response.data);
+
+    const data = response.data.map((item: any) => ({
+      id: item.id ?? item.Id,
+      title: item.title ?? item.Title,
+      description:
+        item.description ??
+        item.Description ??
+        "",
+      subjectId:
+        item.subjectId ??
+        item.SubjectId,
+      duration:
+        item.duration ??
+        item.Duration,
+      createdAt:
+        item.createdAt ??
+        item.CreatedAt,
+
+      // CHECK
+      difficulty:
+        item.difficulty ??
+        item.Difficulty,
+
+      // CHECK
+      isActive:
+        item.isActive ??
+        item.IsActive,
+    }));
+
+    console.log("MAPPED:", data);
+
+    setExams(data);
+    setFilteredExams(data);
+
+  } catch (error) {
+
+    console.error(error);
+
+  } finally {
+
+    setLoading(false);
+
+  }
+};
 
   const handleOpenCreate = () => {
     setSelectedExam(null);
@@ -78,8 +118,9 @@ export default function AdminExam() {
     setFormData({
       title: "",
       description: "",
-      durationMinutes: 60,
       subjectId: 1,
+      duration: 60,
+      difficulty: "Easy",
       isActive: true,
     });
 
@@ -91,9 +132,11 @@ export default function AdminExam() {
 
     setFormData({
       title: exam.title,
-      description: exam.description,
-      durationMinutes: exam.durationMinutes,
+      description: exam.description || "",
       subjectId: exam.subjectId,
+      duration: exam.duration,
+      difficulty:
+        exam.difficulty || "Easy",
       isActive: exam.isActive,
     });
 
@@ -102,52 +145,53 @@ export default function AdminExam() {
 
   const handleSave = async () => {
     try {
-      let response;
+
+      const payload = {
+        Id: selectedExam?.id || 0,
+        Title: formData.title,
+        Description: formData.description,
+        SubjectId: Number(formData.subjectId),
+        Duration: Number(formData.duration),
+        Difficulty: formData.difficulty,
+        IsActive: formData.isActive,
+        CreatedAt:
+          selectedExam?.createdAt ||
+          new Date().toISOString(),
+      };
 
       if (selectedExam) {
-        response = await api.put(
-          `https://localhost:7083/api/Exams/${selectedExam.id}`,
-          {
-            title: formData.title,
-            durationMinutes: formData.durationMinutes,
-            isActive: formData.isActive,
-          }
+
+        await api.put(
+          `Exams/${selectedExam.id}`,
+          payload
         );
+
+        alert("Cập nhật đề thi thành công");
+
       } else {
-        response = await api.post(
-          "https://localhost:7083/api/Exams",
-          {
-            title: formData.title,
-            description: formData.description,
-            durationMinutes: formData.durationMinutes,
-            subjectId: formData.subjectId,
-            isActive: formData.isActive,
-          }
+
+        await api.post(
+          "Exams/create-random",
+          payload
         );
+
+        alert("Thêm đề thi thành công");
       }
-
-      const data = response.data;
-
-      if (response.status !== 200) {
-        throw new Error(
-          data.message || "Lưu đề thi thất bại"
-        );
-      }
-
-      alert(data.message || "Lưu đề thi thành công");
 
       setShowModal(false);
 
-      loadExams();
-    } catch (error: unknown) {
+      // LOAD LẠI TỪ DATABASE
+      await loadExams();
+
+    } catch (error: any) {
+
       console.error(error);
 
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Lưu đề thi thất bại";
-
-      alert(message);
+      alert(
+        error?.response?.data?.message ||
+        JSON.stringify(error?.response?.data) ||
+        "Lưu đề thi thất bại"
+      );
     }
   };
 
@@ -157,30 +201,23 @@ export default function AdminExam() {
     }
 
     try {
-      const response = await api.delete(
-        `https://localhost:7083/api/Exams/${id}`
+
+      await api.delete(
+        `Exams/${id}`
       );
 
-      const data = response.data;
+      alert("Xóa đề thi thành công");
 
-      if (response.status !== 200) {
-        throw new Error(
-          data.message || "Xóa đề thi thất bại"
-        );
-      }
+      await loadExams();
 
-      alert(data.message || "Xóa đề thi thành công");
+    } catch (error: any) {
 
-      loadExams();
-    } catch (error: unknown) {
       console.error(error);
 
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Xóa đề thi thất bại";
-
-      alert(message);
+      alert(
+        error?.response?.data?.message ||
+        "Xóa đề thi thất bại"
+      );
     }
   };
 
@@ -189,17 +226,16 @@ export default function AdminExam() {
 
       <div className="max-w-7xl mx-auto px-6 py-10">
 
-        {/* HEADER */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-5 mb-8">
+        <div className="flex justify-between items-center mb-8">
 
           <div>
 
-            <h1 className="text-4xl font-extrabold mb-2 text-white">
+            <h1 className="text-4xl font-bold">
               Quản lý đề thi
             </h1>
 
-            <p className="text-slate-300">
-              Quản lý toàn bộ đề thi trong hệ thống
+            <p className="text-slate-400 mt-2">
+              Quản lý toàn bộ đề thi
             </p>
 
           </div>
@@ -208,17 +244,17 @@ export default function AdminExam() {
 
             <input
               type="text"
-              placeholder="Tìm theo tên đề hoặc mã môn học..."
+              placeholder="Tìm kiếm..."
               value={search}
               onChange={(e) =>
                 setSearch(e.target.value)
               }
-              className="w-[300px] px-4 py-3 rounded-xl bg-[#1e293b] border border-white/10 text-white placeholder:text-slate-400 outline-none"
+              className="px-4 py-3 rounded-xl bg-[#1e293b] border border-white/10 outline-none"
             />
 
             <button
               onClick={handleOpenCreate}
-              className="px-5 py-3 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 hover:shadow-lg active:scale-95 transition-all"
+              className="px-5 py-3 rounded-xl bg-blue-600 hover:bg-blue-700"
             >
               + Thêm đề thi
             </button>
@@ -227,178 +263,152 @@ export default function AdminExam() {
 
         </div>
 
-        {/* TABLE */}
-        <div className="bg-[#1e293b] border border-white/10 rounded-3xl overflow-hidden shadow-xl">
+        <div className="bg-[#1e293b] rounded-3xl overflow-hidden border border-white/10">
 
           {loading ? (
-            <div className="flex justify-center items-center py-20">
 
-              <div className="w-14 h-14 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-
-            </div>
-          ) : filteredExams.length === 0 ? (
             <div className="text-center py-20">
-
-              <div className="text-6xl mb-4">
-                📝
-              </div>
-
-              <h2 className="text-2xl font-bold mb-2 text-white">
-                Không tìm thấy đề thi
-              </h2>
-
-              <p className="text-slate-400">
-                Hãy thử tìm kiếm bằng từ khóa khác
-              </p>
-
+              Đang tải...
             </div>
+
           ) : (
-            <div className="overflow-x-auto">
 
-              <table className="w-full">
+            <table className="w-full">
 
-                <thead className="bg-[#0f172a] border-b border-white/10">
+              <thead className="bg-[#0f172a]">
 
-                  <tr>
+                <tr>
 
-                    <th className="px-6 py-4 text-left text-sm font-bold text-slate-300">
-                      Đề thi
-                    </th>
+                  <th className="px-6 py-4 text-left">
+                    Đề thi
+                  </th>
 
-                    <th className="px-6 py-4 text-left text-sm font-bold text-slate-300">
-                      Mã môn học
-                    </th>
+                  <th className="px-6 py-4 text-left">
+                    Môn học
+                  </th>
 
-                    <th className="px-6 py-4 text-left text-sm font-bold text-slate-300">
-                      Thời gian
-                    </th>
+                  <th className="px-6 py-4 text-left">
+                    Thời gian
+                  </th>
 
-                    <th className="px-6 py-4 text-left text-sm font-bold text-slate-300">
-                      Trạng thái
-                    </th>
+                  <th className="px-6 py-4 text-left">
+                    Độ khó
+                  </th>
 
-                    <th className="px-6 py-4 text-left text-sm font-bold text-slate-300">
-                      Ngày tạo
-                    </th>
+                  <th className="px-6 py-4 text-left">
+                    Trạng thái
+                  </th>
 
-                    <th className="px-6 py-4 text-center text-sm font-bold text-slate-300">
-                      Hành động
-                    </th>
+                  <th className="px-6 py-4 text-center">
+                    Hành động
+                  </th>
+
+                </tr>
+
+              </thead>
+
+              <tbody>
+
+                {filteredExams.map((exam) => (
+
+                  <tr
+                    key={exam.id}
+                    className="border-t border-white/10"
+                  >
+
+                    <td className="px-6 py-5">
+
+                      <div>
+
+                        <p className="font-semibold">
+                          {exam.title}
+                        </p>
+
+                        <p className="text-xs text-slate-400">
+                          #{exam.id}
+                        </p>
+
+                      </div>
+
+                    </td>
+
+                    <td className="px-6 py-5">
+                      #{exam.subjectId}
+                    </td>
+
+                    <td className="px-6 py-5">
+                      {exam.duration} phút
+                    </td>
+
+                    <td className="px-6 py-5">
+                      {exam.difficulty}
+                    </td>
+
+                    <td className="px-6 py-5">
+
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs ${
+                          exam.isActive
+                            ? "bg-green-500/20 text-green-400"
+                            : "bg-red-500/20 text-red-400"
+                        }`}
+                      >
+                        {exam.isActive
+                          ? "Đang mở"
+                          : "Đã khóa"}
+                      </span>
+
+                    </td>
+
+                    <td className="px-6 py-5">
+
+                      <div className="flex justify-center gap-2">
+
+                        <button
+                          onClick={() =>
+                            handleOpenEdit(exam)
+                          }
+                          className="px-3 py-1 rounded-lg bg-yellow-500/20 text-yellow-400"
+                        >
+                          Sửa
+                        </button>
+
+                        <button
+                          onClick={() =>
+                            handleDelete(exam.id)
+                          }
+                          className="px-3 py-1 rounded-lg bg-red-500/20 text-red-400"
+                        >
+                          Xóa
+                        </button>
+
+                      </div>
+
+                    </td>
 
                   </tr>
 
-                </thead>
+                ))}
 
-                <tbody className="divide-y divide-white/10">
+              </tbody>
 
-                  {filteredExams.map((exam) => (
-                    <tr
-                      key={exam.id}
-                      className="hover:bg-white/5 transition"
-                    >
+            </table>
 
-                      <td className="px-6 py-5">
-
-                        <div>
-
-                          <p className="font-semibold text-white">
-                            {exam.title}
-                          </p>
-
-                          <p className="text-xs text-slate-400 font-mono">
-                            ID: #{exam.id}
-                          </p>
-
-                        </div>
-
-                      </td>
-
-                      <td className="px-6 py-5">
-
-                        <span className="px-3 py-1 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20 text-sm font-medium">
-                          #{exam.subjectId}
-                        </span>
-
-                      </td>
-
-                      <td className="px-6 py-5 text-slate-300">
-                        {exam.durationMinutes} phút
-                      </td>
-
-                      <td className="px-6 py-5">
-
-                        <span
-                          className={`px-3 py-1 rounded-full text-xs font-bold border ${
-                            exam.isActive
-                              ? "bg-green-500/10 text-green-400 border-green-500/20"
-                              : "bg-red-500/10 text-red-400 border-red-500/20"
-                          }`}
-                        >
-                          {exam.isActive
-                            ? "ĐANG MỞ"
-                            : "ĐÃ KHÓA"}
-                        </span>
-
-                      </td>
-
-                      <td className="px-6 py-5 text-slate-400 text-sm">
-
-                        {new Date(
-                          exam.createdAt
-                        ).toLocaleDateString("vi-VN")}
-
-                      </td>
-
-                      <td className="px-6 py-5">
-
-                        <div className="flex justify-center gap-2">
-
-                          <button
-                            onClick={() =>
-                              handleOpenEdit(exam)
-                            }
-                            className="px-3 py-1.5 rounded-lg bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 hover:bg-yellow-500/20 transition text-sm font-medium"
-                          >
-                            Sửa
-                          </button>
-
-                          <button
-                            onClick={() =>
-                              handleDelete(exam.id)
-                            }
-                            className="px-3 py-1.5 rounded-lg bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition text-sm font-medium"
-                          >
-                            Xóa
-                          </button>
-
-                        </div>
-
-                      </td>
-
-                    </tr>
-                  ))}
-
-                </tbody>
-
-              </table>
-
-            </div>
           )}
 
         </div>
 
-        {/* MODAL */}
         {showModal && (
 
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4">
+          <div className="fixed inset-0 z-[9999] bg-black/70 flex items-center justify-center px-4">
 
-            <div className="w-full max-w-lg bg-[#1e293b] border border-white/10 rounded-3xl p-8 shadow-2xl">
+            <div className="w-full max-w-lg bg-[#1e293b] rounded-3xl p-8 border border-white/10">
 
-              <h2 className="text-2xl font-bold mb-6 text-white">
+              <h2 className="text-2xl font-bold mb-6">
 
                 {selectedExam
                   ? "Cập nhật đề thi"
-                  : "Thêm đề thi mới"}
+                  : "Thêm đề thi"}
 
               </h2>
 
@@ -406,7 +416,7 @@ export default function AdminExam() {
 
                 <div>
 
-                  <label className="block text-sm font-medium text-slate-300 mb-1">
+                  <label className="block mb-2">
                     Tên đề thi
                   </label>
 
@@ -419,26 +429,26 @@ export default function AdminExam() {
                         title: e.target.value,
                       })
                     }
-                    className="w-full px-4 py-3 rounded-xl bg-[#0f172a] border border-white/10 text-white outline-none focus:border-blue-500"
+                    className="w-full px-4 py-3 rounded-xl bg-[#0f172a] border border-white/10 outline-none"
                   />
 
                 </div>
 
                 <div>
 
-                  <label className="block text-sm font-medium text-slate-300 mb-1">
+                  <label className="block mb-2">
                     Mô tả
                   </label>
 
                   <textarea
-                    value={formData.description || ""}
+                    value={formData.description}
                     onChange={(e) =>
                       setFormData({
                         ...formData,
                         description: e.target.value,
                       })
                     }
-                    className="w-full px-4 py-3 rounded-xl bg-[#0f172a] border border-white/10 text-white min-h-[100px] outline-none focus:border-blue-500"
+                    className="w-full min-h-[100px] px-4 py-3 rounded-xl bg-[#0f172a] border border-white/10 outline-none"
                   />
 
                 </div>
@@ -447,7 +457,7 @@ export default function AdminExam() {
 
                   <div>
 
-                    <label className="block text-sm font-medium text-slate-300 mb-1">
+                    <label className="block mb-2">
                       Mã môn học
                     </label>
 
@@ -462,66 +472,103 @@ export default function AdminExam() {
                           ),
                         })
                       }
-                      className="w-full px-4 py-3 rounded-xl bg-[#0f172a] border border-white/10 text-white"
+                      className="w-full px-4 py-3 rounded-xl bg-[#0f172a] border border-white/10 outline-none"
                     />
 
                   </div>
 
                   <div>
 
-                    <label className="block text-sm font-medium text-slate-300 mb-1">
-                      Thời gian (phút)
+                    <label className="block mb-2">
+                      Thời gian
                     </label>
 
                     <input
                       type="number"
-                      value={formData.durationMinutes}
+                      value={formData.duration}
                       onChange={(e) =>
                         setFormData({
                           ...formData,
-                          durationMinutes: Number(
+                          duration: Number(
                             e.target.value
                           ),
                         })
                       }
-                      className="w-full px-4 py-3 rounded-xl bg-[#0f172a] border border-white/10 text-white"
+                      className="w-full px-4 py-3 rounded-xl bg-[#0f172a] border border-white/10 outline-none"
                     />
 
                   </div>
 
                 </div>
 
-                <div>
+                <div className="grid grid-cols-2 gap-4">
 
-                  <label className="block text-sm font-medium text-slate-300 mb-1">
-                    Trạng thái
-                  </label>
+                  <div>
 
-                  <select
-                    value={
-                      formData.isActive
-                        ? "true"
-                        : "false"
-                    }
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        isActive:
-                          e.target.value ===
-                          "true",
-                      })
-                    }
-                    className="w-full px-4 py-3 rounded-xl bg-[#0f172a] border border-white/10 text-white outline-none focus:border-blue-500"
-                  >
-                    <option value="true">
-                      Đang mở (Active)
-                    </option>
+                    <label className="block mb-2">
+                      Độ khó
+                    </label>
 
-                    <option value="false">
-                      Đã khóa (Disabled)
-                    </option>
+                    <select
+                      value={formData.difficulty}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          difficulty: e.target.value,
+                        })
+                      }
+                      className="w-full px-4 py-3 rounded-xl bg-[#0f172a] border border-white/10 outline-none"
+                    >
 
-                  </select>
+                      <option value="Easy">
+                        Easy
+                      </option>
+
+                      <option value="Medium">
+                        Medium
+                      </option>
+
+                      <option value="Hard">
+                        Hard
+                      </option>
+
+                    </select>
+
+                  </div>
+
+                  <div>
+
+                    <label className="block mb-2">
+                      Trạng thái
+                    </label>
+
+                    <select
+                      value={
+                        formData.isActive
+                          ? "true"
+                          : "false"
+                      }
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          isActive:
+                            e.target.value === "true",
+                        })
+                      }
+                      className="w-full px-4 py-3 rounded-xl bg-[#0f172a] border border-white/10 outline-none"
+                    >
+
+                      <option value="true">
+                        Đang mở
+                      </option>
+
+                      <option value="false">
+                        Đã khóa
+                      </option>
+
+                    </select>
+
+                  </div>
 
                 </div>
 
@@ -533,16 +580,16 @@ export default function AdminExam() {
                   onClick={() =>
                     setShowModal(false)
                   }
-                  className="px-6 py-2.5 rounded-xl text-slate-300 hover:bg-white/10 font-medium transition"
+                  className="px-6 py-2 rounded-xl bg-gray-600 hover:bg-gray-700"
                 >
                   Hủy
                 </button>
 
                 <button
                   onClick={handleSave}
-                  className="px-6 py-2.5 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 shadow-md transition"
+                  className="px-6 py-2 rounded-xl bg-blue-600 hover:bg-blue-700"
                 >
-                  Lưu dữ liệu
+                  Lưu
                 </button>
 
               </div>

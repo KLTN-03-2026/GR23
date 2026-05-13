@@ -35,7 +35,7 @@ export default function UsersPage() {
     const loadUsers = async () => {
       try {
         const response = await api.get(
-          "https://localhost:7083/api/Users"
+          "Users"
         );
 
         if (response.status !== 200) {
@@ -100,7 +100,7 @@ export default function UsersPage() {
 
     try {
       await api.delete(
-        `https://localhost:7083/api/Users/${id}`
+        `Users/${id}`
       );
 
       setUsers((prev) =>
@@ -119,12 +119,12 @@ export default function UsersPage() {
     try {
       if (selectedUser) {
         await api.put(
-          `https://localhost:7083/api/Users/admin-update/${selectedUser.id}`,
+          `Users/admin-update/${selectedUser.id}`,
           formData
         );
       } else {
         await api.post(
-          `https://localhost:7083/api/Users`,
+          `Users`,
           {
             ...formData,
             password: "123456",

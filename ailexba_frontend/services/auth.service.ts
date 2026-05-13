@@ -1,6 +1,5 @@
 import axios, { AxiosError } from 'axios';
-
-const API_URL = 'https://localhost:7083/api/Auth';
+import api from "@/services/common";
 
 // ===============================
 // INTERFACES
@@ -41,8 +40,8 @@ export const authService = {
 
   register: async (data: RegisterData) => {
     try {
-      const response = await axios.post(
-        `${API_URL}/register`,
+      const response = await api.post(
+        `Auth/register`,
         data
       );
 
@@ -67,8 +66,8 @@ export const authService = {
   login: async (data: LoginData) => {
     try {
 
-      const response = await axios.post(
-        `${API_URL}/login`,
+      const response = await api.post(
+        `Auth/login`,
         data
       );
 
@@ -181,8 +180,8 @@ export const authService = {
 forgotPassword: async (email: string) => {
   try {
 
-    const response = await axios.post(
-      `${API_URL}/forgot-password`,
+    const response = await api.post(
+      `Auth/forgot-password`,
       {
         email,
       }
