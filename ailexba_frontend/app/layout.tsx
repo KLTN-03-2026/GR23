@@ -103,7 +103,7 @@ export default function RootLayout({
                 href={
                   user?.role?.toLowerCase() ===
                     'admin'
-                    ? '/admin/subjects'
+                    ? '/admin/dashboard'
                     : '/'
                 }
                 className="text-2xl font-black bg-gradient-to-r from-blue-500 to-indigo-500 bg-clip-text text-transparent"
@@ -218,14 +218,21 @@ export default function RootLayout({
 
                 {navLink('/admin/users', 'Quản lý người dùng')}
 
-                {navLink('/admin/subjects', 'QL môn & chuyên đề')}
+                {navLink('/admin/subjects', 'Quản lý môn')}
 
                 {navLink('/admin/ai', 'Quản lý AI')}
 
                 {navLink('/admin/dashboard', 'Thống kê hệ thống')}
 
               </nav>
-
+              <div className="mt-auto px-4 w-full">
+                <button
+                  onClick={handleLogout}
+                  className="w-full px-5 py-2 rounded-xl font-semibold bg-gradient-to-r from-red-500 to-pink-500 hover:opacity-90 transition-all"
+                >
+                  Đăng xuất
+                </button>
+              </div>
             </aside>
           )}
 

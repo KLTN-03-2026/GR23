@@ -9,7 +9,7 @@ export default function AdminAIPage() {
         const token = localStorage.getItem('token');
 
         const res = await fetch(
-            'https://localhost:7083/api/AIConfig/status',
+            'http://localhost:5080/api/AIConfig/status',
             {
                 headers: {
                     Authorization: `Bearer ${token}`,
@@ -50,7 +50,7 @@ export default function AdminAIPage() {
                     className="px-4 py-2 bg-blue-600 rounded"
                     onClick={async () => {
                         const res = await fetch(
-                            'https://localhost:7083/api/AI/explain-simple',
+                            'http://localhost:5080/api/AI/explain-simple',
                             {
                                 method: 'POST',
                                 headers: {

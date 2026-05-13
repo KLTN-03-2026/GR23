@@ -1,6 +1,6 @@
 "use client";
 
-const API_URL = "https://localhost:7083";
+const API_URL = "https://localhost:5080";
 
 import { useEffect, useState } from "react";
 import { authService } from "@/services/auth.service";

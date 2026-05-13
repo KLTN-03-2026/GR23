@@ -18,34 +18,34 @@ export default function LoginPage() {
   }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setError('');
-  setLoading(true);
-  try {
-    const res = await authService.login(formData);
-    
-    // Kiểm tra res có dữ liệu là đi luôn
-    if (res) {
-      if(authService.isAdmin()){
-        console.log("Đang bay sang admin dashboard...");
-        window.location.href = '/admin/subjects'; 
-      } else {
-        console.log("Đang bay sang trang chủ...");
-        window.location.href = '/'; 
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    try {
+      const res = await authService.login(formData);
+
+      // Kiểm tra res có dữ liệu là đi luôn
+      if (res) {
+        if (authService.isAdmin()) {
+          console.log("Đang bay sang admin dashboard...");
+          window.location.href = '/admin/dashboard';
+        } else {
+          console.log("Đang bay sang trang chủ...");
+          window.location.href = '/';
+        }
       }
+    } catch (err: unknown) {
+      // Ép kiểu err về dạng có thể đọc được message
+      const errorMessage = err instanceof Error ? err.message : String(err);
+
+      setError(errorMessage || 'Sai email hoặc mật khẩu!');
+      console.error("Login Error:", err);
+    } finally {
+      setLoading(false);
     }
-  } catch (err: unknown) {
-  // Ép kiểu err về dạng có thể đọc được message
-  const errorMessage = err instanceof Error ? err.message : String(err);
-  
-  setError(errorMessage || 'Sai email hoặc mật khẩu!');
-  console.error("Login Error:", err);
-} finally {
-  setLoading(false);
-}
-};
+  };
   return (
-  <div className="relative flex items-center justify-center min-h-[80vh] px-6">
+    <div className="relative flex items-center justify-center min-h-[80vh] px-6">
 
       {/* BACKGROUND GLOW */}
       <div className="absolute w-[500px] h-[500px] bg-blue-500/20 blur-[120px] rounded-full"></div>

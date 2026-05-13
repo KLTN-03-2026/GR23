@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import api from '@/services/common';
 
 type Stats = {
     totalUsers: number;
@@ -18,22 +19,9 @@ export default function AdminDashboardPage() {
     useEffect(() => {
         const fetchStats = async () => {
             try {
-                const token = localStorage.getItem('token');
+                const res = await api.get('/Dashboard/stats');
 
-                const res = await fetch('https://localhost:7083/api/Dashboard/stats', {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        Authorization: `Bearer ${token}`,
-                    },
-                });
-
-                if (!res.ok) {
-                    throw new Error('Không thể tải dữ liệu dashboard');
-                }
-
-                const data = await res.json();
-                setStats(data);
+                setStats(res.data);
             } catch (err: any) {
                 setError(err.message || 'Lỗi không xác định');
             } finally {
