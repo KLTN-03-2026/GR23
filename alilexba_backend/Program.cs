@@ -1,12 +1,13 @@
 ﻿using alilexba_backend.Data;
-using alilexba_backend.Services; 
-using Microsoft.EntityFrameworkCore;
-using System.Text.Json.Serialization;
-using System.Text.Json;
+using alilexba_backend.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using System.Text;
+using Microsoft.OpenApi;
 using Microsoft.OpenApi.Models;
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 

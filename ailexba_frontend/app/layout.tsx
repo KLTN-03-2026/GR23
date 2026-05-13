@@ -55,29 +55,32 @@ export default function RootLayout({
   ) => (
     <Link
       href={href}
-      className={`relative px-3 py-2 transition-all duration-300 ${
-        pathname === href
-          ? 'text-blue-500 font-bold'
-          : 'text-slate-300 hover:text-blue-400'
-      }`}
+      className={`flex items-center px-4 py-3 rounded-xl transition-all duration-300 ${pathname === href
+        ? 'bg-blue-500/10 text-blue-400 font-semibold'
+        : 'text-slate-300 hover:text-blue-400'
+        }`}
     >
       {label}
 
-      {pathname === href && (
-        <span className="absolute left-0 bottom-0 w-full h-[2px] bg-blue-500 rounded"></span>
-      )}
+
     </Link>
   );
 
   if (!mounted) {
-  return (
-    <html lang="vi">
-      <body className="bg-[#0f172a]" />
-    </html>
-  );
-}
+    return (
+      <html lang="vi">
+        <body className="bg-[#0f172a]" />
+      </html>
+    );
+  }
 
   console.log('USER STATE:', user);
+
+  /*const isAdmin =
+    user?.role?.toLowerCase() === 'admin';*/
+
+  const isAdminPage =
+    pathname.startsWith('/admin');
 
   return (
     <html
@@ -89,154 +92,158 @@ export default function RootLayout({
         suppressHydrationWarning
       >
 
-        {/* NAVBAR */}
-        <header className="sticky top-0 z-50 bg-[#1e293b] border-b border-white/10 backdrop-blur-xl">
+        {/* !Admin */}
+        {!isAdminPage && (
+          <header className="sticky top-0 z-50 bg-[#1e293b] border-b border-white/10 h-16 flex items-center px-6">
 
-          <div className="w-full px-6 h-16 flex items-center justify-between">
+            <div className="w-full px-6 h-16 flex items-center justify-between">
 
-            {/* LOGO */}
-            <Link
-              href={
-                user?.role?.toLowerCase() ===
-                'admin'
-                  ? '/admin/subjects'
-                  : '/'
-              }
-              className="text-2xl font-black bg-gradient-to-r from-blue-500 to-indigo-500 bg-clip-text text-transparent"
-            >
-              AILEXBA.
-            </Link>
+              {/* LOGO */}
+              <Link
+                href={
+                  user?.role?.toLowerCase() ===
+                    'admin'
+                    ? '/admin/subjects'
+                    : '/'
+                }
+                className="text-2xl font-black bg-gradient-to-r from-blue-500 to-indigo-500 bg-clip-text text-transparent"
+              >
+                AILEXBA.
+              </Link>
 
-            {/* MENU */}
-            <nav className="flex gap-6 items-center font-medium ml-auto">
+              {/* MENU */}
+              <nav className="flex gap-6 items-center font-medium ml-auto">
 
-              {/* CHƯA LOGIN */}
-              {!user && (
-                <>
-                  {navLink(
-                    '/',
-                    'Trang chủ'
+                {/* CHƯA LOGIN */}
+                {!user && (
+                  <>
+                    {navLink(
+                      '/',
+                      'Trang chủ'
+                    )}
+
+                    {navLink(
+                      '/about',
+                      'Giới thiệu'
+                    )}
+                  </>
+                )}
+
+                {/* STUDENT */}
+                {user?.role?.toLowerCase() ===
+                  'student' && (
+                    <>
+                      {navLink(
+                        '/',
+                        'Trang chủ'
+                      )}
+
+                      {navLink(
+                        '/history',
+                        'Lịch sử'
+                      )}
+
+                      {navLink(
+                        '/exam',
+                        'Đề thi'
+                      )}
+
+                      {navLink(
+                        '/profile',
+                        'Cá nhân'
+                      )}
+
+                      {navLink('/chat-ai', 'Chat AI')}
+                    </>
                   )}
 
-                  {navLink(
-                    '/about',
-                    'Giới thiệu'
-                  )}
-                </>
-              )}
+                {/* AUTH */}
+                {user ? (
+                  <div className="flex items-center gap-4 ml-6 pl-6 border-l border-white/10">
 
-              {/* ADMIN */}
-              {user?.role?.toLowerCase() ===
-                'admin' && (
-                <>
-                  {navLink(
-                    '/admin/subjects',
-                    'Môn học'
-                  )}
+                    <span className="text-sm font-semibold text-white bg-[#334155] px-3 py-1 rounded-lg">
+                      👋 {user.fullName}
+                    </span>
 
-                  {navLink(
-                    '/admin/exams',
-                    'QL đề'
-                  )}
+                    <button
+                      onClick={handleLogout}
+                      className="px-5 py-2 rounded-xl font-semibold bg-gradient-to-r from-red-500 to-pink-500 hover:opacity-90 transition-all"
+                    >
+                      Đăng xuất
+                    </button>
 
-                  {navLink(
-                    '/admin/question',
-                    'Câu hỏi'
-                  )}
+                  </div>
+                ) : (
+                  <div className="flex gap-3 ml-6">
 
-                  {navLink(
-                    '/admin/users',
-                    'Người dùng'
-                  )}
+                    <Link
+                      href="/login"
+                      className="px-5 py-2 text-white bg-[#334155] hover:bg-[#475569] rounded-xl transition-all"
+                    >
+                      Đăng nhập
+                    </Link>
 
-                  {navLink(
-                    '/profile',
-                    'Cá nhân'
-                  )}
-                </>
-              )}
+                    <Link
+                      href="/register"
+                      className="px-5 py-2 text-white bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl transition-all"
+                    >
+                      Đăng ký
+                    </Link>
 
-              {/* STUDENT */}
-              {user?.role?.toLowerCase() ===
-                'student' && (
-                <>
-                  {navLink(
-                    '/',
-                    'Trang chủ'
-                  )}
+                  </div>
+                )}
 
-                  {navLink(
-                    '/history',
-                    'Lịch sử'
-                  )}
+              </nav>
 
-                  {navLink(
-                    '/exam',
-                    'Đề thi'
-                  )}
+            </div>
 
-                  {navLink(
-                    '/profile',
-                    'Cá nhân'
-                  )}
-                </>
-              )}
+          </header>)}
 
-              {/* AUTH */}
-              {user ? (
-                <div className="flex items-center gap-4 ml-6 pl-6 border-l border-white/10">
+        {/* Admin sidebar */}
+        <div className="flex flex-row flex-1">
 
-                  <span className="text-sm font-semibold text-white bg-[#334155] px-3 py-1 rounded-lg">
-                    👋 {user.fullName}
-                  </span>
+          {isAdminPage && (
+            <aside className="w-72 bg-[#111827] border-r border-white/10 h-screen sticky top-0 flex flex-col p-6 shrink-0">
+              <div className="mb-10">
+                <Link href="/admin" className="text-3xl font-black bg-gradient-to-r from-blue-500 to-indigo-500 bg-clip-text text-transparent">
+                  AILEXBA.
+                </Link>
+              </div>
 
-                  <button
-                    onClick={handleLogout}
-                    className="px-5 py-2 rounded-xl font-semibold bg-gradient-to-r from-red-500 to-pink-500 hover:opacity-90 transition-all"
-                  >
-                    Đăng xuất
-                  </button>
+              <nav className="flex flex-col gap-2 w-full">
 
-                </div>
-              ) : (
-                <div className="flex gap-3 ml-6">
+                {navLink('/admin/question', 'Quản lý câu hỏi')}
 
-                  <Link
-                    href="/login"
-                    className="px-5 py-2 text-white bg-[#334155] hover:bg-[#475569] rounded-xl transition-all"
-                  >
-                    Đăng nhập
-                  </Link>
+                {navLink('/admin/exams', 'Quản lý đề thi')}
 
-                  <Link
-                    href="/register"
-                    className="px-5 py-2 text-white bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl transition-all"
-                  >
-                    Đăng ký
-                  </Link>
+                {navLink('/admin/users', 'Quản lý người dùng')}
 
-                </div>
-              )}
+                {navLink('/admin/subjects', 'QL môn & chuyên đề')}
 
-            </nav>
+                {navLink('/admin/ai', 'Quản lý AI')}
 
-          </div>
+                {navLink('/admin/dashboard', 'Thống kê hệ thống')}
 
-        </header>
+              </nav>
 
-        {/* MAIN */}
-        <main className="flex-1 w-full bg-[#0f172a] px-6 py-10">
-          {children}
-        </main>
+            </aside>
+          )}
+
+          <main className={`flex-1 bg-[#0f172a] ${isAdminPage ? 'p-8' : 'w-full px-6 py-10'}`}>
+            {children}
+          </main>
+
+        </div>
 
         {/* FOOTER */}
-        <footer className="bg-[#1e293b] border-t border-white/10 py-6 text-center text-slate-400 text-sm">
+        {!isAdminPage && (
+          <footer className="bg-[#1e293b] border-t border-white/10 py-6 text-center text-slate-400 text-sm">
 
-          <p className="hover:text-white transition">
-            © 2026 AILEXBA Project - Nhóm Duy Tân University.
-          </p>
+            <p className="hover:text-white transition">
+              © 2026 AILEXBA Project - Nhóm Duy Tân University.
+            </p>
 
-        </footer>
+          </footer>)}
 
       </body>
     </html>

@@ -2,15 +2,28 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function HomePage() {
   const [user, setUser] = useState<any>(null);
+
+  const router = useRouter();
 
   useEffect(() => {
     const currentUser = localStorage.getItem('user');
 
     if (currentUser) {
-      setUser(JSON.parse(currentUser));
+      const parsedUser = JSON.parse(currentUser);
+
+      setUser(parsedUser);
+
+      if (parsedUser.role === 'admin') {
+        router.push('/admin');
+      }
+
+      if (parsedUser.role === 'user') {
+        router.push('/dashboard');
+      }
     }
   }, []);
 

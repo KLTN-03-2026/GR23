@@ -41,20 +41,20 @@ namespace alilexba_backend.Services
             catch { return "Lỗi kết nối AI."; }
         }
 
-     
+
         public async Task<string> ExplainDeepAsync(int resultDetailId)
         {
             var detail = await _context.ExamResultDetails
                 .Include(d => d.Question)
-                    .ThenInclude(q => q!.Subject) 
+                    .ThenInclude(q => q!.Subject)
                 .Include(d => d.Question)
-                    .ThenInclude(q => q!.Answers) 
+                    .ThenInclude(q => q!.Answers)
                 .FirstOrDefaultAsync(d => d.Id == resultDetailId);
 
             // Kiểm tra null an toàn
             if (detail == null || detail.Question == null) return "Không tìm thấy dữ liệu câu hỏi.";
 
-         
+
             string subjectName = detail.Question.Subject?.Name ?? "Môn học tự do";
             string correctAnswer = detail.Question.Answers?.FirstOrDefault(a => a.IsCorrect)?.Text ?? "Chưa xác định";
 
@@ -68,7 +68,7 @@ namespace alilexba_backend.Services
             return await CallGeminiAsync(prompt);
         }
 
-   
+
         public async Task<PredictScoreResponse> PredictEnhancedAsync(int userId)
         {
             var history = await _context.ExamResults
@@ -83,7 +83,7 @@ namespace alilexba_backend.Services
 
             var allDetails = history.SelectMany(h => h.Details ?? new List<ExamResultDetail>()).ToList();
 
-        
+
             var weakTopics = allDetails
                 .Where(d => d.Question != null && d.Question.Subject != null && !d.IsCorrect)
                 .GroupBy(d => d.Question!.Subject!.Name) // Sử dụng "!" để khẳng định dữ liệu đã qua lọc null
