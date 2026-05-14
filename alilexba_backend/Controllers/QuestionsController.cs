@@ -4,14 +4,10 @@ using alilexba_backend.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MiniExcelLibs;
-using System;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
-using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
+
 
 namespace alilexba_backend.Controllers
 {
@@ -64,7 +60,7 @@ namespace alilexba_backend.Controllers
         // 3. Nhập hàng loạt từ Excel
         [HttpPost("upload-excel")]
         [Consumes("multipart/form-data")]
-        public async Task<IActionResult> UploadExcel([FromForm] UploadExcelRequest request, [FromQuery] int subjectId)
+        public async Task<IActionResult> UploadExcel([FromForm] UploadExcelRequest request, [FromQuery] int subjectId, [FromQuery] int examId)
         {
             try
             {
@@ -104,7 +100,7 @@ namespace alilexba_backend.Controllers
         // 4. Nhập hàng loạt từ file Word (.docx)
         [HttpPost("upload-word")]
         [Consumes("multipart/form-data")]
-        public async Task<IActionResult> UploadWord([FromForm] UploadExcelRequest request, [FromQuery] int subjectId)
+        public async Task<IActionResult> UploadWord([FromForm] UploadExcelRequest request, [FromQuery] int subjectId, [FromQuery] int examId)
         {
             try
             {
@@ -138,6 +134,7 @@ namespace alilexba_backend.Controllers
                         {
                             Content = matchContent.Groups[1].Value.Trim(),
                             SubjectId = subjectId,
+                            ExamId = examId,
                             Answers = new List<Answer>
                             {
                                 new Answer { Text = matchA.Groups[1].Value.Trim(), IsCorrect = correctLetter == "A" },
