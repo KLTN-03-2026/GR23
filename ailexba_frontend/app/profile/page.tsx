@@ -31,6 +31,10 @@ export default function ProfilePage() {
       confirmPassword: ''
     });
 
+  const [loading, setLoading] = useState(false);
+
+
+
   useEffect(() => {
     const currentUser = authService.getCurrentUser();
     setUser(currentUser);
@@ -135,9 +139,20 @@ export default function ProfilePage() {
       </div>
     );
   }
+  const isAdmin =
+    typeof window !== 'undefined' &&
+    JSON.parse(
+      localStorage.getItem('user') || '{}'
+    )?.role === 'Admin';
 
   return (
-    <div className="relative max-w-6xl mx-auto px-6 py-12">
+    <div
+      className={
+        isAdmin
+          ? 'relative w-full px-6 py-12'
+          : 'relative max-w-6xl mx-auto px-6 py-12'
+      }
+    >
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-blue-500/20 blur-[120px] rounded-full -z-10"></div>
 
       <div className="mb-10 text-center">

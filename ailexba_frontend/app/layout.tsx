@@ -80,7 +80,11 @@ export default function RootLayout({
     user?.role?.toLowerCase() === 'admin';*/
 
   const isAdminPage =
-    pathname.startsWith('/admin');
+    pathname.startsWith('/admin') ||
+    (
+      pathname === '/profile' &&
+      user?.role === 'Admin'
+    );
 
   return (
     <html
@@ -224,7 +228,6 @@ export default function RootLayout({
                 {navLink('/admin/ai', 'Quản lý AI')}
 
                 {navLink('/profile', 'Cá nhân')}
-
 
 
 
