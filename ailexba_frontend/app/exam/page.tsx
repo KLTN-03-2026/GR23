@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import api from '@/services/common';
 
 interface ExamItem {
@@ -14,22 +15,36 @@ interface ExamItem {
 }
 
 export default function ExamsPage() {
-  const [exams, setExams] = useState<ExamItem[]>([]);
-  const [filteredExams, setFilteredExams] = useState<ExamItem[]>([]);
-  const [keyword, setKeyword] = useState('');
-  const [loading, setLoading] = useState(true);
+  const router = useRouter();
+
+  const [exams, setExams] =
+    useState<ExamItem[]>([]);
+
+  const [filteredExams, setFilteredExams] =
+    useState<ExamItem[]>([]);
+
+  const [keyword, setKeyword] =
+    useState('');
+
+  const [loading, setLoading] =
+    useState(true);
 
   useEffect(() => {
     loadExams();
   }, []);
 
   useEffect(() => {
-    const search = keyword.toLowerCase();
+    const search =
+      keyword.toLowerCase();
 
     const filtered = exams.filter(
       (exam) =>
-        exam.title?.toLowerCase().includes(search) ||
-        exam.subjectName?.toLowerCase().includes(search)
+        exam.title
+          ?.toLowerCase()
+          .includes(search) ||
+        exam.subjectName
+          ?.toLowerCase()
+          .includes(search)
     );
 
     setFilteredExams(filtered);
@@ -39,7 +54,8 @@ export default function ExamsPage() {
     try {
       setLoading(true);
 
-      const token = localStorage.getItem('token');
+      const token =
+        localStorage.getItem('token');
 
       const response = await api.get(
         'Exams/available',
@@ -51,18 +67,22 @@ export default function ExamsPage() {
       );
 
       if (response.status !== 200) {
-        throw new Error('Không thể tải danh sách đề thi');
+        throw new Error(
+          'Không thể tải danh sách đề thi'
+        );
       }
 
       const result = response.data;
 
       setExams(result);
+
       setFilteredExams(result);
 
     } catch (error) {
       console.error(error);
 
       setExams([]);
+
       setFilteredExams([]);
 
     } finally {
@@ -91,8 +111,8 @@ export default function ExamsPage() {
 
         </div>
 
-        {/* SEARCH */}
-        <div className="mb-8">
+        {/* ACTIONS */}
+        <div className="flex flex-col md:flex-row gap-4 mb-8">
 
           <input
             type="text"
@@ -101,11 +121,9 @@ export default function ExamsPage() {
             onChange={(e) =>
               setKeyword(e.target.value)
             }
-            className="w-full px-5 py-4 rounded-2xl bg-[#1e293b] border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+            className="flex-1 px-5 py-4 rounded-2xl bg-[#1e293b] border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
           />
-
         </div>
-
         {/* LOADING */}
         {loading ? (
 
@@ -139,71 +157,77 @@ export default function ExamsPage() {
           /* DATA */
           <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
 
-            {filteredExams.map((exam) => (
+            {filteredExams.map(
+              (exam) => (
 
-              <div
-                key={exam.id}
-                className="bg-[#1e293b] border border-white/10 rounded-3xl p-6 hover:bg-[#273449] hover:-translate-y-1 transition-all duration-300 shadow-xl"
-              >
+                <div
+                  key={exam.id}
+                  className="bg-[#1e293b] border border-white/10 rounded-3xl p-6 hover:bg-[#273449] hover:-translate-y-1 transition-all duration-300 shadow-xl"
+                >
 
-                {/* TOP */}
-                <div className="flex items-center justify-between mb-4">
+                  {/* TOP */}
+                  <div className="flex items-center justify-between mb-4">
 
-                  <span className="px-3 py-1 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 text-sm">
+                    <span className="px-3 py-1 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 text-sm">
 
-                    {exam.subjectName || 'Môn học'}
+                      {exam.subjectName ||
+                        'Môn học'}
 
-                  </span>
+                    </span>
 
-                  <span className="text-sm text-slate-400">
+                    <span className="text-sm text-slate-400">
 
-                    {exam.duration} phút
+                      {exam.duration} phút
 
-                  </span>
+                    </span>
 
-                </div>
+                  </div>
 
-                {/* TITLE */}
-                <h2 className="text-2xl font-bold mb-3 text-white">
+                  {/* TITLE */}
+                  <h2 className="text-2xl font-bold mb-3 text-white">
 
-                  {exam.title}
+                    {exam.title}
 
-                </h2>
+                  </h2>
 
-                {/* DESCRIPTION */}
-                <p className="text-slate-400 mb-6 line-clamp-3">
+                  {/* DESCRIPTION */}
+                  <p className="text-slate-400 mb-6 line-clamp-3">
 
-                  {exam.description || 'Không có mô tả'}
+                    {exam.description ||
+                      'Không có mô tả'}
 
-                </p>
+                  </p>
 
-                {/* FOOTER */}
-                <div className="flex items-center justify-between">
+                  {/* FOOTER */}
+                  <div className="flex items-center justify-between">
 
-                  <span className="text-sm text-slate-500">
+                    <span className="text-sm text-slate-500">
 
-                    {exam.createdAt
-                      ? new Date(
+                      {exam.createdAt
+                        ? new Date(
                           exam.createdAt
                         ).toLocaleDateString(
                           'vi-VN'
                         )
-                      : '---'}
+                        : '---'}
 
-                  </span>
+                    </span>
 
-                  <Link
-                    href={`/exam/${exam.id}`}
-                    className="px-5 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold hover:scale-105 transition-all"
-                  >
-                    Làm bài
-                  </Link>
+                    <Link
+                      href={`/exam/${exam.id}`}
+                      className="px-5 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold hover:scale-105 transition-all"
+                    >
+
+                      Làm bài
+
+                    </Link>
+
+                  </div>
 
                 </div>
 
-              </div>
-
-            ))}
+              )
+            )}
 
           </div>
 

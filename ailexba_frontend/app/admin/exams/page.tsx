@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { authService } from "@/services/auth.service";
 import api from "@/services/common";
 import { service } from "@/services/service";
+import { useRouter } from 'next/navigation';
 
 interface ExamItem {
   id: number;
@@ -34,6 +35,7 @@ export default function AdminExam() {
     difficulty: "Easy",
     isActive: true,
   });
+  const router = useRouter();
 
   useEffect(() => {
     if (!authService.isAdmin()) {
@@ -262,6 +264,18 @@ export default function AdminExam() {
               }
               className="px-4 py-3 rounded-xl bg-[#1e293b] border border-white/10 outline-none"
             />
+<button
+  onClick={() =>
+    router.push(
+      '/admin/exams/random'
+    )
+  }
+  className="px-5 py-3 rounded-2xl bg-gradient-to-r from-purple-600 to-pink-600 font-bold"
+>
+
+  Tạo đề ngẫu nhiên
+
+</button>
 
             <button
               onClick={handleOpenCreate}
