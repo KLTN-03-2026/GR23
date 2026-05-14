@@ -1,4 +1,13 @@
-﻿using System.Text.RegularExpressions;
+﻿using alilexba_backend.Data;
+using alilexba_backend.DTOs;
+using alilexba_backend.Models;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using MiniExcelLibs;
+using System.Text.RegularExpressions;
+using DocumentFormat.OpenXml.Packaging;
+using DocumentFormat.OpenXml.Wordprocessing;
+
 
 namespace alilexba_backend.Controllers
 {
