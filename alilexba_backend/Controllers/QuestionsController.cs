@@ -81,6 +81,8 @@ namespace alilexba_backend.Controllers
                         {
                             Content = row.Content ?? "N/A",
                             SubjectId = subjectId,
+                            ExamId = row.ExamId ?? 0,
+                            Level = row.Level ?? "Easy",
                             Answers = new List<Answer>()
                         };
 
@@ -161,8 +163,11 @@ namespace alilexba_backend.Controllers
             var questions = await _context.Questions.Where(q => q.SubjectId == subjectId).Include(q => q.Answers).ToListAsync();
             if (!questions.Any()) return NotFound("Không có dữ liệu.");
 
-            var exportData = questions.Select(q => new {
+            var exportData = questions.Select(q => new
+            {
+                ExamId = q.ExamId,
                 Content = q.Content,
+                Level = q.Level,
                 OptionA = q.Answers.ElementAtOrDefault(0)?.Text,
                 OptionB = q.Answers.ElementAtOrDefault(1)?.Text,
                 OptionC = q.Answers.ElementAtOrDefault(2)?.Text,
@@ -213,6 +218,8 @@ namespace alilexba_backend.Controllers
     }
     public class QuestionExcelModel
     {
+        public int? ExamId { get; set; }
+        public string? Level { get; set; }
         public string? Content { get; set; }
         public string? OptionA { get; set; }
         public string? OptionB { get; set; }

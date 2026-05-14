@@ -52,6 +52,7 @@ export default function QuestionsPage() {
       content: "",
       subjectId: 0,
       examId: 0,
+      Level: "",
       option1: "",
       option2: "",
       option3: "",
@@ -157,6 +158,7 @@ export default function QuestionsPage() {
       content: "",
       subjectId: 0,
       examId: 0,
+      Level: "",
       option1: "",
       option2: "",
       option3: "",
@@ -195,6 +197,8 @@ export default function QuestionsPage() {
           examId: Number(
             newQuestion.examId
           ),
+
+          Level: newQuestion.Level,
 
           answers: [
             {
@@ -847,8 +851,8 @@ export default function QuestionsPage() {
                               opt.text
                             }
                             className={`p-3 rounded-xl border ${opt.isCorrect
-                                ? "bg-green-500/10 border-green-500/20 text-green-400 font-bold"
-                                : "bg-[#0f172a] border-white/10 text-slate-300"
+                              ? "bg-green-500/10 border-green-500/20 text-green-400 font-bold"
+                              : "bg-[#0f172a] border-white/10 text-slate-300"
                               }`}
                           >
 
@@ -903,8 +907,8 @@ export default function QuestionsPage() {
               />
 
               <select
-                  value={newQuestion.examId}
-                  onChange={(e) =>
+                value={newQuestion.examId}
+                onChange={(e) =>
                   setNewQuestion({
                     ...newQuestion,
                     examId:
@@ -913,30 +917,62 @@ export default function QuestionsPage() {
                       ),
                   })
                 }
-                  className="w-full p-4 rounded-xl bg-[#0f172a] border border-white/10 text-white"
+                className="w-full p-4 rounded-xl bg-[#0f172a] border border-white/10 text-white"
+              >
+
+                <option
+                  value="0"
+                  className="bg-black text-white"
+                >
+                  Chọn mã đề
+                </option>
+
+                {examsFilter.map(
+                  (exam: any) => (
+
+                    <option
+                      key={exam.id}
+                      value={exam.id}
+                      className="bg-black text-white"
+                    >
+                      {exam.title}
+                    </option>
+                  )
+                )}
+
+              </select>
+
+              <div>
+
+                <label className="block mb-2">
+                  Độ khó
+                </label>
+
+                <select
+                  value={newQuestion.Level}
+                  onChange={(e) =>
+                    setNewQuestion({
+                      ...newQuestion, Level: e.target.value,
+                    })
+                  }
+                  className="w-full px-4 py-3 rounded-xl bg-[#0f172a] border border-white/10 outline-none"
                 >
 
-                  <option
-                    value="0"
-                    className="bg-black text-white"
-                  >
-                    Chọn mã đề
+                  <option value="Easy">
+                    Easy
                   </option>
 
-                  {examsFilter.map(
-                    (exam: any) => (
+                  <option value="Medium">
+                    Medium
+                  </option>
 
-                      <option
-                        key={exam.id}
-                        value={exam.id}
-                        className="bg-black text-white"
-                      >
-                        {exam.title}
-                      </option>
-                    )
-                  )}
+                  <option value="Hard">
+                    Hard
+                  </option>
 
                 </select>
+
+              </div>
 
               <div className="grid md:grid-cols-2 gap-4">
 
