@@ -8,6 +8,7 @@ using Microsoft.OpenApi.Models;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using alilexba_backend.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -82,6 +83,7 @@ builder.Services.AddSwaggerGen(c => {
     });
 });
 
+builder.Services.AddScoped<EmailService>();
 var app = builder.Build();
 //  5. Pipeline xử lý Request 
 app.UseCors("AllowNextJS");

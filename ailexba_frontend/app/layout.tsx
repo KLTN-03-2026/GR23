@@ -211,18 +211,21 @@ export default function RootLayout({
               </div>
 
               <nav className="flex flex-col gap-2 w-full">
-
-                {navLink('/admin/question', 'Quản lý câu hỏi')}
-
-                {navLink('/admin/exams', 'Quản lý đề thi')}
-
-                {navLink('/admin/users', 'Quản lý người dùng')}
+                {navLink('/admin/dashboard', 'Thống kê hệ thống')}
 
                 {navLink('/admin/subjects', 'Quản lý môn')}
 
+                {navLink('/admin/exams', 'Quản lý đề thi')}
+
+                {navLink('/admin/question', 'Quản lý câu hỏi')}
+
+                {navLink('/admin/users', 'Quản lý gười dùng')}
+
                 {navLink('/admin/ai', 'Quản lý AI')}
 
-                {navLink('/admin/dashboard', 'Thống kê hệ thống')}
+                {navLink('/profile', 'Cá nhân')}
+
+
 
               </nav>
               <div className="mt-auto px-4 w-full">

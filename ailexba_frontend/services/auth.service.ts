@@ -177,34 +177,19 @@ export const authService = {
 // FORGOT PASSWORD
 // ===============================
 
-forgotPassword: async (email: string) => {
-  try {
+forgotPassword: async (
+  email: string
+) => {
 
-    const response = await api.post(
-      `Auth/forgot-password`,
-      {
-        email,
-      }
+  const response =
+    await api.post(
+      '/Auth/forgot-password',
+      { email }
     );
 
-    return response.data;
-
-  } catch (error: unknown) {
-
-    if (axios.isAxiosError(error)) {
-
-      const axiosError =
-        error as AxiosError<ErrorResponse>;
-
-      throw (
-        axiosError.response?.data?.message ||
-        'Gửi yêu cầu thất bại!'
-      );
-    }
-
-    throw 'Lỗi hệ thống!';
-  }
+  return response.data;
 },
+
 
   // ===============================
   // LOGOUT

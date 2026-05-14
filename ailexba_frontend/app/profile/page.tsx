@@ -19,11 +19,17 @@ export default function ProfilePage() {
     email: ''
   });
 
-  const [passwordForm, setPasswordForm] = useState({
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: ''
-  });
+  const [passwordForm, setPasswordForm] =
+    useState({
+      currentPassword:
+        typeof window !== 'undefined'
+          ? localStorage.getItem(
+            'tempPassword'
+          ) || ''
+          : '',
+      newPassword: '',
+      confirmPassword: ''
+    });
 
   useEffect(() => {
     const currentUser = authService.getCurrentUser();
@@ -38,70 +44,89 @@ export default function ProfilePage() {
   }, []);
 
   const handleUpdateProfile = async () => {
-  try {
-    const response = await api.put(
-      `Users/${user.userId}/profile`,
-      {
-        fullName: profileForm.fullName
-      }
-    );
-
-    const data = await response.data;
-
-    if (response.status != 200) {
-      throw new Error(data.message || 'Cập nhật thất bại');
-    }
-
-    const updatedUser = {
-      ...user,
-      fullName: profileForm.fullName
-    };
-
-    localStorage.setItem('user', JSON.stringify(updatedUser));
-    setUser(updatedUser);
-    setIsEditing(false);
-
-    alert(data.message || 'Cập nhật thông tin thành công');
-  } catch (error: any) {
-    console.error(error);
-    alert(error.message || 'Không thể cập nhật thông tin');
-  }
-};
-
-  const handleChangePassword = async () => {
-    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      alert('Mật khẩu xác nhận không khớp');
-      return;
-    }
-
     try {
       const response = await api.put(
-  `Users/${user.userId}/change-password`,
-  {
-    oldPassword: passwordForm.currentPassword,
-    newPassword: passwordForm.newPassword
-  }
-);
+        `/Users/profile/${user.userId}`,
+        {
+          fullName: profileForm.fullName
+        }
+      );
 
-const data = await response.data;
+      const data = await response.data;
 
-if (response.status != 200) {
-  console.log(data);
-  throw new Error(data.message || 'Đổi mật khẩu thất bại');
-}
+      if (response.status != 200) {
+        throw new Error(data.message || 'Cập nhật thất bại');
+      }
 
-      setPasswordForm({
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: ''
-      });
+      const updatedUser = {
+        ...user,
+        fullName: profileForm.fullName
+      };
 
-      alert(data.message || 'Đổi mật khẩu thành công');
-      } catch (error) {
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      setUser(updatedUser);
+      setIsEditing(false);
+
+      alert(data.message || 'Cập nhật thông tin thành công');
+    } catch (error: any) {
       console.error(error);
-      alert('Không thể đổi mật khẩu');
+      alert(error.message || 'Không thể cập nhật thông tin');
     }
   };
+
+  const handleChangePassword =
+    async () => {
+
+      if (
+        passwordForm.newPassword !==
+        passwordForm.confirmPassword
+      ) {
+        alert(
+          'Mật khẩu xác nhận không khớp'
+        );
+        return;
+      }
+
+      try {
+
+        const response = await api.put(
+          `/Users/${user.userId}/change-password`,
+          {
+            oldPassword:
+              passwordForm.currentPassword,
+
+            newPassword:
+              passwordForm.newPassword
+          }
+        );
+
+        const data = response.data;
+
+        localStorage.removeItem(
+          'tempPassword'
+        );
+
+        setPasswordForm({
+          currentPassword: '',
+          newPassword: '',
+          confirmPassword: ''
+        });
+
+        alert(
+          data.message ||
+          'Đổi mật khẩu thành công'
+        );
+
+      } catch (error: any) {
+
+        console.error(error);
+
+        alert(
+          error?.response?.data?.message ||
+          'Không thể đổi mật khẩu'
+        );
+      }
+    };
 
   if (!user) {
     return (

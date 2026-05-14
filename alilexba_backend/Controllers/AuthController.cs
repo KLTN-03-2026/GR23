@@ -12,20 +12,32 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.Extensions.Configuration;
 using Microsoft.AspNetCore.Authorization;
+using alilexba_backend.Services;
 
 namespace alilexba_backend.Controllers
+
 {
     [Route("api/[controller]")]
     [ApiController]
     public class AuthController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
+
         private readonly IConfiguration _configuration;
 
-        public AuthController(ApplicationDbContext context, IConfiguration configuration)
+        private readonly EmailService _emailService;
+
+        public AuthController(
+            ApplicationDbContext context,
+            IConfiguration configuration,
+            EmailService emailService
+        )
         {
             _context = context;
+
             _configuration = configuration;
+
+            _emailService = emailService;
         }
 
         // PB06: Đăng ký tài khoản
@@ -46,6 +58,7 @@ namespace alilexba_backend.Controllers
             };
 
             _context.Users.Add(user);
+
             await _context.SaveChangesAsync();
 
             return Ok(new { message = "Đăng ký tài khoản thành công." });
@@ -72,23 +85,36 @@ namespace alilexba_backend.Controllers
             };
 
             var jwtKey = _configuration["Jwt:Key"] ?? "Chuoi_Bi_Mat_Sieu_Dai_Va_An_Toan_De_Ky_Token_123456";
-            var authSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
+
+            var authSigningKey =
+                new SymmetricSecurityKey(
+                    Encoding.UTF8.GetBytes(jwtKey)
+                );
 
             var token = new JwtSecurityToken(
                 expires: DateTime.Now.AddHours(4),
                 claims: authClaims,
-                signingCredentials: new SigningCredentials(authSigningKey, SecurityAlgorithms.HmacSha256)
+                signingCredentials: new SigningCredentials(
+                    authSigningKey,
+                    SecurityAlgorithms.HmacSha256
+                )
             );
 
             return Ok(new
             {
                 message = "Đăng nhập thành công!",
-                token = new JwtSecurityTokenHandler().WriteToken(token),
+
+                token = new JwtSecurityTokenHandler()
+                    .WriteToken(token),
+
                 user = new
                 {
                     id = user.Id,
+
                     fullName = user.FullName,
+
                     email = user.Email,
+
                     role = user.Role
                 }
             });
@@ -102,26 +128,60 @@ namespace alilexba_backend.Controllers
             return Ok(new { message = "Đã đăng xuất thành công." });
         }
 
-        // PB09: Quên mật khẩu
+        /// PB09: Quên mật khẩu
         [HttpPost("forgot-password")]
         public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
         {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
+            var user = await _context.Users
+                .FirstOrDefaultAsync(u => u.Email == request.Email);
 
             if (user == null)
             {
-                return NotFound(new { message = "Tài khoản không tồn tại." });
+                return NotFound(new
+                {
+                    message = "Tài khoản không tồn tại."
+                });
             }
 
             var random = new Random();
-            string newTempPassword = random.Next(100000, 999999).ToString();
 
-            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newTempPassword);
+            string newTempPassword =
+                random.Next(100000, 999999).ToString();
+
+            user.PasswordHash =
+                BCrypt.Net.BCrypt.HashPassword(
+                    newTempPassword
+                );
+
             _context.Users.Update(user);
+
             await _context.SaveChangesAsync();
 
-            return Ok(new { message = "Đặt lại mật khẩu thành công." });
+            var emailService =
+                new EmailService(_configuration);
+
+            await emailService.SendEmailAsync(
+                user.Email,
+                "Mật khẩu mới - AILEXBA",
+                        $@"
+                <h2>AILEXBA</h2>
+
+                <p>Mật khẩu mới của bạn là:</p>
+
+                <h1>{newTempPassword}</h1>
+
+                <p>
+                Hãy đăng nhập và đổi lại mật khẩu
+                sau khi đăng nhập.
+                </p>
+                "
+            );
+
+            return Ok(new
+            {
+                message = "Đã gửi mật khẩu mới qua email.",
+                tempPassword = newTempPassword
+            });
         }
-       
     }
 }
