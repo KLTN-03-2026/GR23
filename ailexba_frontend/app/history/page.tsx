@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import api from "@/services/common";
 
 interface HistoryItem {
@@ -10,6 +11,7 @@ interface HistoryItem {
   score?: number;
   totalQuestions?: number;
   correctAnswers?: number;
+  totalTimeSpent?: number;
   takenAt?: string;
   completedAt?: string;
   createdAt?: string;
@@ -17,6 +19,8 @@ interface HistoryItem {
 }
 
 export default function HistoryPage() {
+  const router = useRouter();
+
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [loading, setLoading] =
     useState<boolean>(true);
@@ -24,6 +28,18 @@ export default function HistoryPage() {
   useEffect(() => {
     loadHistory();
   }, []);
+
+  const formatDuration = (
+    seconds: number
+  ) => {
+    const mins = Math.floor(
+      seconds / 60
+    );
+
+    const secs = seconds % 60;
+
+    return `${mins}m ${secs}s`;
+  };
 
   const loadHistory =
     async (): Promise<void> => {
@@ -125,7 +141,12 @@ export default function HistoryPage() {
 
                   <div
                     key={item.id || index}
-                    className="bg-[#1e293b] border border-white/10 rounded-3xl p-8 shadow-xl hover:border-blue-500/30 transition-all"
+                    onClick={() =>
+                      router.push(
+                        `/exam/result/${item.id}`
+                      )
+                    }
+                    className="bg-[#1e293b] border border-white/10 rounded-3xl p-8 shadow-xl hover:border-blue-500/30 transition-all cursor-pointer"
                   >
 
                     <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
@@ -159,12 +180,20 @@ export default function HistoryPage() {
                           </span>
 
                           <span>
+                            ⏱️{" "}
+                            {formatDuration(
+                              item.totalTimeSpent ||
+                              0
+                            )}
+                          </span>
+
+                          <span>
                             📅{" "}
                             {new Date(
                               item.takenAt ||
-                                item.completedAt ||
-                                item.createdAt ||
-                                Date.now()
+                              item.completedAt ||
+                              item.createdAt ||
+                              Date.now()
                             ).toLocaleDateString(
                               "vi-VN"
                             )}
@@ -177,7 +206,7 @@ export default function HistoryPage() {
                       {/* RIGHT */}
                       <div className="flex items-center gap-4">
 
-                        <div className="text-right">
+                        <div className="text-right w-[100px]">
 
                           <p className="text-slate-400 text-sm mb-1">
                             Điểm số
@@ -192,24 +221,19 @@ export default function HistoryPage() {
                         </div>
 
                         <div
-                          className={`px-4 py-2 rounded-2xl font-bold text-sm border ${
-                            (item.score || 0) >=
-                            8
-                              ? "bg-green-500/10 text-green-400 border-green-500/20"
-                              : (item.score ||
-                                  0) >= 6.5
+                          className={`w-[120px] text-center px-4 py-2 rounded-2xl font-bold text-sm border whitespace-nowrap ${(item.score || 0) >= 8
+                            ? "bg-green-500/10 text-green-400 border-green-500/20"
+                            : (item.score || 0) >= 6.5
                               ? "bg-yellow-500/10 text-yellow-400 border-yellow-500/20"
                               : "bg-red-500/10 text-red-400 border-red-500/20"
-                          }`}
+                            }`}
                         >
 
-                          {(item.score || 0) >=
-                          8
+                          {(item.score || 0) >= 8
                             ? "Giỏi"
-                            : (item.score ||
-                                0) >= 6.5
-                            ? "Khá"
-                            : "Trung bình"}
+                            : (item.score || 0) >= 6.5
+                              ? "Khá"
+                              : "Trung bình"}
 
                         </div>
 

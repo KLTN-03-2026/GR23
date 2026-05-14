@@ -82,7 +82,7 @@ namespace alilexba_backend.Controllers
                             Content = row.Content ?? "N/A",
                             SubjectId = subjectId,
                             ExamId = row.ExamId ?? 0,
-                            Level = row.Level ?? "Easy",
+                            Level = row.Level?? "Easy",
                             Answers = new List<Answer>()
                         };
 
