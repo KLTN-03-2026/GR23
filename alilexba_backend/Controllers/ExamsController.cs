@@ -32,7 +32,9 @@ namespace alilexba_backend.Controllers
                     e.Title,
                     e.Duration,
                     e.SubjectId,
-                    SubjectName = e.Subject!.Name
+                    SubjectName = e.Subject!.Name,
+                    e.Difficulty,
+                    e.IsActive
                 })
                 .ToListAsync();
 

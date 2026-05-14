@@ -28,7 +28,7 @@ namespace alilexba_backend.Controllers
 
         // 1. Lấy toàn bộ câu hỏi kèm đáp án
         [HttpGet]
-        public async Task<IActionResult> GetQuestions(int page = 1, int pageSize = 10, string? search = "")
+        public async Task<IActionResult> GetQuestions(int page = 1, int pageSize = 100, string? search = "")
         {
             var query = _context.Questions.Include(q => q.Subject).AsQueryable();
 
@@ -52,6 +52,9 @@ namespace alilexba_backend.Controllers
         {
             var subjectExists = await _context.Subjects.AnyAsync(s => s.Id == question.SubjectId);
             if (!subjectExists) return BadRequest(new { message = "Môn học không tồn tại!" });
+
+            var ExamExists = await _context.Exams.AnyAsync(e => e.Id == question.ExamId);
+            if (!ExamExists) return BadRequest(new { message = "Đề thi không tồn tại!" });
 
             _context.Questions.Add(question);
             await _context.SaveChangesAsync();

@@ -15,7 +15,9 @@ namespace alilexba_backend.Models
         public int SubjectId { get; set; }
         public Subject? Subject { get; set; }
 
-     
+        public int ExamId { get; set; }
+        public Exam? Exam { get; set; }
+
         public List<Answer> Answers { get; set; } = new List<Answer>();
     }
 }

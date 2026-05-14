@@ -1,10 +1,9 @@
 "use client";
 
-const API_URL = "https://localhost:5080";
-
 import { useEffect, useState } from "react";
 import { authService } from "@/services/auth.service";
 import api from "@/services/common";
+import { service } from "@/services/service";
 
 interface Answer {
   id?: number;
@@ -12,14 +11,22 @@ interface Answer {
   isCorrect: boolean;
 }
 
+interface Subject {
+  id: number;
+  name: string;
+}
+
 interface Question {
   id: number;
   content: string;
   subjectId: number;
+  examId: number;
+  subject: Subject;
   answers: Answer[];
 }
 
 export default function QuestionsPage() {
+
   const [questions, setQuestions] =
     useState<Question[]>([]);
 
@@ -43,7 +50,8 @@ export default function QuestionsPage() {
   const [newQuestion, setNewQuestion] =
     useState({
       content: "",
-      subjectId: 1,
+      subjectId: 0,
+      examId: 0,
       option1: "",
       option2: "",
       option3: "",
@@ -51,92 +59,104 @@ export default function QuestionsPage() {
       correct: "A",
     });
 
+  const [exams, setExams] = useState([]);
+  const [examsFilter, setExamsFilter] = useState([]);
+
+  const [subjects, setSubjects] =
+    useState([]);
+
+  const [subjectId, setSubjectId] =
+    useState(0);
+
   useEffect(() => {
+
     if (!authService.isAdmin()) {
       window.location.href = "/";
       return;
     }
 
-    loadQuestions();
+    (async () => {
+
+      try {
+
+        const data =
+          await service.getListExam();
+
+        setExams(data);
+
+      } catch (error) {
+
+        console.error(error);
+      }
+
+      try {
+
+        const data =
+          await service.getListSubject();
+
+        setSubjects(data);
+
+      } catch (error) {
+
+        console.error(error);
+      }
+
+      setLoading(false);
+
+    })();
+
   }, []);
 
   useEffect(() => {
-    const keyword =
-      search.toLowerCase();
+    loadQuestions();
 
-    const filtered =
-      questions.filter(
-        (q: Question) =>
-          q.content
-            ?.toLowerCase()
-            .includes(keyword) ||
-          q.subjectId
-            ?.toString()
-            .includes(keyword)
-      );
+    setExamsFilter(exams.filter(
+      (e: any) => e.subjectId === subjectId
+    ));
 
-    setFilteredQuestions(filtered);
-  }, [search, questions]);
+  }, [subjectId]);
 
-  const loadQuestions =
-    async () => {
+  const loadQuestions = () => {
+
+    (async () => {
+
+      setLoading(true);
+
       try {
-        setLoading(true);
 
-        const token =
-          localStorage.getItem(
-            "token"
+        const data =
+          await service.getListQuestions(
+            subjectId
           );
 
-        const response =
-          await api.get(
-            `Questions`,
-            {
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
-            }
-          );
+        console.log(data);
 
-        const result =
-          response.data;
+        setQuestions(data);
 
-        if (
-          result?.questions
-        ) {
-          setQuestions(
-            result.questions
-          );
+        setFilteredQuestions(data);
 
-          setFilteredQuestions(
-            result.questions
-          );
-        } else if (
-          Array.isArray(result)
-        ) {
-          setQuestions(result);
-
-          setFilteredQuestions(
-            result
-          );
-        } else {
-          setQuestions([]);
-          setFilteredQuestions([]);
-        }
       } catch (error) {
+
         console.error(error);
 
         setQuestions([]);
+
         setFilteredQuestions([]);
+
       } finally {
+
         setLoading(false);
       }
-    };
+
+    })();
+  };
 
   const resetForm = () => {
+
     setNewQuestion({
       content: "",
-      subjectId: 1,
+      subjectId: 0,
+      examId: 0,
       option1: "",
       option2: "",
       option3: "",
@@ -147,30 +167,40 @@ export default function QuestionsPage() {
 
   const handleOpenCreate =
     () => {
+
       resetForm();
+
       setShowForm(true);
     };
 
   const handleSave =
     async () => {
+
       try {
+
         const token =
           localStorage.getItem(
             "token"
           );
 
         const payload = {
+
           content:
             newQuestion.content,
 
           subjectId: Number(
-            newQuestion.subjectId
+            subjectId
+          ),
+
+          examId: Number(
+            newQuestion.examId
           ),
 
           answers: [
             {
               text:
                 newQuestion.option1,
+
               isCorrect:
                 newQuestion.correct ===
                 "A",
@@ -179,6 +209,7 @@ export default function QuestionsPage() {
             {
               text:
                 newQuestion.option2,
+
               isCorrect:
                 newQuestion.correct ===
                 "B",
@@ -187,6 +218,7 @@ export default function QuestionsPage() {
             {
               text:
                 newQuestion.option3,
+
               isCorrect:
                 newQuestion.correct ===
                 "C",
@@ -195,6 +227,7 @@ export default function QuestionsPage() {
             {
               text:
                 newQuestion.option4,
+
               isCorrect:
                 newQuestion.correct ===
                 "D",
@@ -208,7 +241,8 @@ export default function QuestionsPage() {
             payload,
             {
               headers: {
-                Authorization: `Bearer ${token}`,
+                Authorization:
+                  `Bearer ${token}`,
               },
             }
           );
@@ -235,7 +269,9 @@ export default function QuestionsPage() {
         resetForm();
 
         loadQuestions();
+
       } catch (error) {
+
         console.error(error);
 
         alert(
@@ -244,9 +280,15 @@ export default function QuestionsPage() {
       }
     };
 
+  // =====================================================
+  // UPLOAD EXCEL
+  // =====================================================
+
   const handleUploadExcel =
     async () => {
+
       if (!selectedFile) {
+
         alert(
           "Vui lòng chọn file Excel"
         );
@@ -254,7 +296,17 @@ export default function QuestionsPage() {
         return;
       }
 
+      if (subjectId === 0) {
+
+        alert(
+          "Vui lòng chọn môn học"
+        );
+
+        return;
+      }
+
       try {
+
         const token =
           localStorage.getItem(
             "token"
@@ -270,11 +322,13 @@ export default function QuestionsPage() {
 
         const response =
           await api.post(
-            `Questions/upload-excel?subjectId=${newQuestion.subjectId}`,
+            `Questions/upload-excel?subjectId=${subjectId}`,
             excelFormData,
             {
               headers: {
-                Authorization: `Bearer ${token}`,
+                Authorization:
+                  `Bearer ${token}`,
+
                 "Content-Type":
                   "multipart/form-data",
               },
@@ -290,13 +344,16 @@ export default function QuestionsPage() {
         }
 
         alert(
+          response.data.message ||
           "Upload Excel thành công"
         );
 
         setSelectedFile(null);
 
         loadQuestions();
+
       } catch (error) {
+
         console.error(error);
 
         alert(
@@ -305,7 +362,244 @@ export default function QuestionsPage() {
       }
     };
 
+  // =====================================================
+  // UPLOAD WORD
+  // =====================================================
+
+  const handleUploadWord =
+    async () => {
+
+      if (!selectedFile) {
+
+        alert(
+          "Vui lòng chọn file Word"
+        );
+
+        return;
+      }
+
+      if (subjectId === 0) {
+
+        alert(
+          "Vui lòng chọn môn học"
+        );
+
+        return;
+      }
+
+      try {
+
+        const token =
+          localStorage.getItem(
+            "token"
+          );
+
+        const wordFormData =
+          new FormData();
+
+        wordFormData.append(
+          "file",
+          selectedFile
+        );
+
+        const response =
+          await api.post(
+            `Questions/upload-word?subjectId=${subjectId}`,
+            wordFormData,
+            {
+              headers: {
+                Authorization:
+                  `Bearer ${token}`,
+
+                "Content-Type":
+                  "multipart/form-data",
+              },
+            }
+          );
+
+        if (
+          response.status !== 200
+        ) {
+          throw new Error(
+            "Upload Word thất bại"
+          );
+        }
+
+        alert(
+          response.data.message ||
+          "Upload Word thành công"
+        );
+
+        setSelectedFile(null);
+
+        loadQuestions();
+
+      } catch (error) {
+
+        console.error(error);
+
+        alert(
+          "Upload Word thất bại"
+        );
+      }
+    };
+
+  // =====================================================
+  // EXPORT EXCEL
+  // =====================================================
+
+  const handleExportExcel =
+    async () => {
+
+      if (subjectId === 0) {
+
+        alert(
+          "Vui lòng chọn môn học"
+        );
+
+        return;
+      }
+
+      try {
+
+        const token =
+          localStorage.getItem(
+            "token"
+          );
+
+        const response =
+          await api.get(
+            `Questions/export-excel/${subjectId}`,
+            {
+              headers: {
+                Authorization:
+                  `Bearer ${token}`,
+              },
+
+              responseType:
+                "blob",
+            }
+          );
+
+        const blob =
+          new Blob(
+            [response.data],
+            {
+              type:
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            }
+          );
+
+        const url =
+          window.URL.createObjectURL(
+            blob
+          );
+
+        const link =
+          document.createElement(
+            "a"
+          );
+
+        link.href = url;
+
+        link.download =
+          `Questions_Subject_${subjectId}.xlsx`;
+
+        link.click();
+
+        window.URL.revokeObjectURL(
+          url
+        );
+
+      } catch (error) {
+
+        console.error(error);
+
+        alert(
+          "Xuất Excel thất bại"
+        );
+      }
+    };
+
+  // =====================================================
+  // EXPORT WORD
+  // =====================================================
+
+  const handleExportWord =
+    async () => {
+
+      if (subjectId === 0) {
+
+        alert(
+          "Vui lòng chọn môn học"
+        );
+
+        return;
+      }
+
+      try {
+
+        const token =
+          localStorage.getItem(
+            "token"
+          );
+
+        const response =
+          await api.get(
+            `Questions/export-word/${subjectId}`,
+            {
+              headers: {
+                Authorization:
+                  `Bearer ${token}`,
+              },
+
+              responseType:
+                "blob",
+            }
+          );
+
+        const blob =
+          new Blob(
+            [response.data],
+            {
+              type:
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            }
+          );
+
+        const url =
+          window.URL.createObjectURL(
+            blob
+          );
+
+        const link =
+          document.createElement(
+            "a"
+          );
+
+        link.href = url;
+
+        link.download =
+          `Questions_Subject_${subjectId}.docx`;
+
+        link.click();
+
+        window.URL.revokeObjectURL(
+          url
+        );
+
+      } catch (error) {
+
+        console.error(error);
+
+        alert(
+          "Xuất Word thất bại"
+        );
+      }
+    };
+
   return (
+
     <div className="min-h-screen bg-[#0f172a] text-white">
 
       <div className="relative max-w-7xl mx-auto px-6 py-10">
@@ -353,23 +647,39 @@ export default function QuestionsPage() {
                   Mã môn
                 </span>
 
-                <input
-                  type="number"
-                  min={1}
-                  value={
-                    newQuestion.subjectId
-                  }
+                <select
+                  value={subjectId}
                   onChange={(e) =>
-                    setNewQuestion({
-                      ...newQuestion,
-                      subjectId:
-                        Number(
-                          e.target.value
-                        ) || 1,
-                    })
+                    setSubjectId(
+                      Number(
+                        e.target.value
+                      )
+                    )
                   }
-                  className="w-20 bg-transparent text-white font-semibold outline-none"
-                />
+                  className="w-100 bg-transparent text-white font-semibold outline-none"
+                >
+
+                  <option
+                    value="0"
+                    className="bg-black text-white"
+                  >
+                    Tất cả
+                  </option>
+
+                  {subjects.map(
+                    (subject: any) => (
+
+                      <option
+                        key={subject.id}
+                        value={subject.id}
+                        className="bg-black text-white"
+                      >
+                        {subject.name}
+                      </option>
+                    )
+                  )}
+
+                </select>
 
               </div>
 
@@ -392,13 +702,15 @@ export default function QuestionsPage() {
 
               <input
                 type="file"
-                accept=".xlsx,.xls"
+                accept=".xlsx,.xls,.docx"
                 onChange={(e) => {
+
                   if (
                     e.target.files &&
                     e.target.files
                       .length > 0
                   ) {
+
                     setSelectedFile(
                       e.target.files[0]
                     );
@@ -409,7 +721,7 @@ export default function QuestionsPage() {
 
             </label>
 
-            {/* BUTTON */}
+            {/* UPLOAD EXCEL */}
             <button
               onClick={
                 handleUploadExcel
@@ -419,14 +731,47 @@ export default function QuestionsPage() {
               Upload Excel
             </button>
 
+            {/* UPLOAD WORD */}
             <button
               onClick={
-                handleOpenCreate
+                handleUploadWord
               }
-              className="px-5 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl text-white font-bold hover:opacity-90 transition"
+              className="px-5 py-3 bg-blue-600 rounded-2xl text-white font-bold hover:bg-blue-700 transition"
             >
-              + Thêm câu hỏi
+              Upload Word
             </button>
+
+            {/* EXPORT EXCEL */}
+            <button
+              onClick={
+                handleExportExcel
+              }
+              className="px-5 py-3 bg-yellow-600 rounded-2xl text-white font-bold hover:bg-yellow-700 transition"
+            >
+              Xuất Excel
+            </button>
+
+            {/* EXPORT WORD */}
+            <button
+              onClick={
+                handleExportWord
+              }
+              className="px-5 py-3 bg-purple-600 rounded-2xl text-white font-bold hover:bg-purple-700 transition"
+            >
+              Xuất Word
+            </button>
+
+            {subjectId !== 0 && (
+
+              <button
+                onClick={
+                  handleOpenCreate
+                }
+                className="px-5 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl text-white font-bold hover:opacity-90 transition"
+              >
+                + Thêm câu hỏi
+              </button>
+            )}
 
           </div>
 
@@ -441,8 +786,7 @@ export default function QuestionsPage() {
 
           </div>
 
-        ) : filteredQuestions.length ===
-          0 ? (
+        ) : filteredQuestions.length === 0 ? (
 
           <div className="text-center py-20 bg-[#1e293b] border border-white/10 rounded-3xl">
 
@@ -477,21 +821,18 @@ export default function QuestionsPage() {
                     <div className="flex items-center gap-3 mb-3 flex-wrap">
 
                       <span className="px-3 py-1 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 text-sm">
-                        Câu{" "}
-                        {index + 1}
+                        Câu {index + 1}
                       </span>
 
                       <span className="px-3 py-1 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20 text-sm">
-                        Môn #
-                        {q.subjectId}
+                        Môn&nbsp;
+                        {q.subject.name}
                       </span>
 
                     </div>
 
                     <p className="font-semibold text-xl text-white">
-
                       {q.content}
-
                     </p>
 
                     <div className="grid md:grid-cols-2 gap-3">
@@ -506,8 +847,8 @@ export default function QuestionsPage() {
                               opt.text
                             }
                             className={`p-3 rounded-xl border ${opt.isCorrect
-                              ? "bg-green-500/10 border-green-500/20 text-green-400 font-bold"
-                              : "bg-[#0f172a] border-white/10 text-slate-300"
+                                ? "bg-green-500/10 border-green-500/20 text-green-400 font-bold"
+                                : "bg-[#0f172a] border-white/10 text-slate-300"
                               }`}
                           >
 
@@ -561,23 +902,41 @@ export default function QuestionsPage() {
                 className="w-full p-4 rounded-xl bg-[#0f172a] border border-white/10 text-white min-h-[100px]"
               />
 
-              <input
-                type="number"
-                placeholder="Mã môn học"
-                value={
-                  newQuestion.subjectId
-                }
-                onChange={(e) =>
+              <select
+                  value={newQuestion.examId}
+                  onChange={(e) =>
                   setNewQuestion({
                     ...newQuestion,
-                    subjectId:
+                    examId:
                       Number(
                         e.target.value
                       ),
                   })
                 }
-                className="w-full p-3 rounded-xl bg-[#0f172a] border border-white/10 text-white"
-              />
+                  className="w-full p-4 rounded-xl bg-[#0f172a] border border-white/10 text-white"
+                >
+
+                  <option
+                    value="0"
+                    className="bg-black text-white"
+                  >
+                    Chọn mã đề
+                  </option>
+
+                  {examsFilter.map(
+                    (exam: any) => (
+
+                      <option
+                        key={exam.id}
+                        value={exam.id}
+                        className="bg-black text-white"
+                      >
+                        {exam.title}
+                      </option>
+                    )
+                  )}
+
+                </select>
 
               <div className="grid md:grid-cols-2 gap-4">
 
@@ -708,10 +1067,15 @@ export default function QuestionsPage() {
                 </button>
 
               </div>
+
             </div>
+
           </div>
+
         </div>
+
       )}
+
     </div>
   );
 }

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { authService } from "@/services/auth.service";
 import api from "@/services/common";
+import { service } from "@/services/service";
 
 interface ExamItem {
   id: number;
@@ -23,6 +24,7 @@ export default function AdminExam() {
   const [showModal, setShowModal] = useState(false);
   const [selectedExam, setSelectedExam] =
     useState<ExamItem | null>(null);
+  const [subjects, setSubjects] = useState([]);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -40,6 +42,15 @@ export default function AdminExam() {
     }
 
     loadExams();
+
+    (async () => {
+      try {
+        const data = await service.getListSubject();
+        setSubjects(data);
+      } catch (error) {
+        console.error(error);
+      }
+    })();
   }, []);
 
   useEffect(() => {
@@ -461,19 +472,24 @@ export default function AdminExam() {
                       Mã môn học
                     </label>
 
-                    <input
-                      type="number"
+                    <select
                       value={formData.subjectId}
                       onChange={(e) =>
                         setFormData({
                           ...formData,
-                          subjectId: Number(
-                            e.target.value
-                          ),
+                          subjectId: Number(e.target.value),
                         })
                       }
                       className="w-full px-4 py-3 rounded-xl bg-[#0f172a] border border-white/10 outline-none"
-                    />
+                    >
+                      <option value="">Chọn môn học</option>
+
+                      {subjects.map((subject: any) => (
+                        <option key={subject.id} value={subject.id}>
+                          {subject.name}
+                        </option>
+                      ))}
+                    </select>
 
                   </div>
 
