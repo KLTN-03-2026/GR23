@@ -41,6 +41,7 @@ services:
       # ConnectionStrings__DefaultConnection: >-
         # Server=mssql,1433;Database=${DB_NAME};User Id=sa;Password=${MSSQL_SA_PASSWORD};TrustServerCertificate=True;
       Gemini__ApiKey:  "AIzaSyDjtYyV1-tm8i4eTKV4HsUCEEyeEJeKrt8"
+      Gemini__Model:  "gemini-2.5-flash"
     depends_on:
       mssql:
         condition: service_healthy
