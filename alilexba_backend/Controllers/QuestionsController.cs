@@ -31,7 +31,7 @@ namespace alilexba_backend.Controllers
         [HttpGet]
         public async Task<IActionResult> GetQuestions(int page = 1, int pageSize = 100, string? search = "")
         {
-            var query = _context.Questions.Include(q => q.Subject).AsQueryable();
+            var query = _context.Questions.Include(q => q.Subject).Include(q => q.Answers).AsQueryable();
 
             if (!string.IsNullOrEmpty(search))
             {
