@@ -51,6 +51,7 @@ namespace alilexba_backend.Controllers
                 {
                     e.Id,
                     e.Title,
+                    e.Description,
                     e.Duration,
                     e.SubjectId,
                     SubjectName = e.Subject!.Name
@@ -60,6 +61,8 @@ namespace alilexba_backend.Controllers
             return Ok(exams);
         }
 
+
+        
         [HttpPost("create-random")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> CreateRandomExam([FromBody] CreateExamRequest request)
@@ -84,6 +87,7 @@ namespace alilexba_backend.Controllers
             var newExam = new Exam
             {
                 Title = request.Title,
+                Description = request.Description,
                 SubjectId = request.SubjectId,
                 Duration = request.Duration,
                 Questions = randomQuestions
@@ -414,6 +418,7 @@ namespace alilexba_backend.Controllers
                 {
                     e.Id,
                     e.Title,
+                    e.Description,
                     e.Duration,
                     e.Difficulty,
                     SubjectName = e.Subject!.Name,

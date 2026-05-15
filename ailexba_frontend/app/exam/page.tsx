@@ -72,7 +72,28 @@ export default function ExamsPage() {
         );
       }
 
-      const result = response.data;
+      const result = response.data.map((item: any) => ({
+        id: item.id ?? item.Id,
+        title: item.title ?? item.Title,
+
+        description:
+          item.description ??
+          item.Description ??
+          '',
+
+        duration:
+          item.duration ??
+          item.Duration,
+
+        subjectName:
+          item.subjectName ??
+          item.SubjectName ??
+          'Môn học',
+
+        createdAt:
+          item.createdAt ??
+          item.CreatedAt,
+      }));
 
       setExams(result);
 

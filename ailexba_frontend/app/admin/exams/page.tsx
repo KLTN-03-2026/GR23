@@ -37,6 +37,8 @@ export default function AdminExam() {
   });
   const router = useRouter();
 
+
+
   useEffect(() => {
     if (!authService.isAdmin()) {
       window.location.href = "/";
@@ -70,60 +72,60 @@ export default function AdminExam() {
   }, [search, exams]);
 
   const loadExams = async () => {
-  try {
+    try {
 
-    setLoading(true);
+      setLoading(true);
 
-    const response = await api.get(
-      `Exams?_=${Date.now()}`
-    );
+      const response = await api.get(
+        `Exams?_=${Date.now()}`
+      );
 
-    // CHECK DỮ LIỆU THẬT TỪ DB
-    console.log("API DATA:", response.data);
+      // CHECK DỮ LIỆU THẬT TỪ DB
+      console.log("API DATA:", response.data);
 
-    const data = response.data.map((item: any) => ({
-      id: item.id ?? item.Id,
-      title: item.title ?? item.Title,
-      description:
-        item.description ??
-        item.Description ??
-        "",
-      subjectId:
-        item.subjectId ??
-        item.SubjectId,
-      duration:
-        item.duration ??
-        item.Duration,
-      createdAt:
-        item.createdAt ??
-        item.CreatedAt,
+      const data = response.data.map((item: any) => ({
+        id: item.id ?? item.Id,
+        title: item.title ?? item.Title,
+        description:
+          item.description ??
+          item.Description ??
+          "",
+        subjectId:
+          item.subjectId ??
+          item.SubjectId,
+        duration:
+          item.duration ??
+          item.Duration,
+        createdAt:
+          item.createdAt ??
+          item.CreatedAt,
 
-      // CHECK
-      difficulty:
-        item.difficulty ??
-        item.Difficulty,
+        // CHECK
+        difficulty:
+          item.difficulty ??
+          item.Difficulty,
 
-      // CHECK
-      isActive:
-        item.isActive ??
-        item.IsActive,
-    }));
+        // CHECK
+        isActive:
+          item.isActive ??
+          item.IsActive,
+      }));
 
-    console.log("MAPPED:", data);
+      console.log("MAPPED:", data);
 
-    setExams(data);
-    setFilteredExams(data);
+      setExams(data);
+      setFilteredExams(data);
 
-  } catch (error) {
+    } catch (error) {
 
-    console.error(error);
+      console.error(error);
 
-  } finally {
+    } finally {
 
-    setLoading(false);
+      setLoading(false);
 
-  }
-};
+    }
+  };
 
   const handleOpenCreate = () => {
     setSelectedExam(null);
@@ -157,6 +159,12 @@ export default function AdminExam() {
   };
 
   const handleSave = async () => {
+
+    if (!formData.duration || Number(formData.duration) <= 0) {
+      alert('Phải nhập thời gian lớn hơn 0');
+      return;
+    }
+
     try {
 
       const payload = {
@@ -193,7 +201,6 @@ export default function AdminExam() {
 
       setShowModal(false);
 
-      // LOAD LẠI TỪ DATABASE
       await loadExams();
 
     } catch (error: any) {
@@ -264,18 +271,18 @@ export default function AdminExam() {
               }
               className="px-4 py-3 rounded-xl bg-[#1e293b] border border-white/10 outline-none"
             />
-<button
-  onClick={() =>
-    router.push(
-      '/admin/exams/random'
-    )
-  }
-  className="px-5 py-3 rounded-2xl bg-gradient-to-r from-purple-600 to-pink-600 font-bold"
->
+            <button
+              onClick={() =>
+                router.push(
+                  '/admin/exams/random'
+                )
+              }
+              className="px-5 py-3 rounded-2xl bg-gradient-to-r from-purple-600 to-pink-600 font-bold"
+            >
 
-  Tạo đề ngẫu nhiên
+              Tạo đề ngẫu nhiên
 
-</button>
+            </button>
 
             <button
               onClick={handleOpenCreate}
@@ -372,11 +379,10 @@ export default function AdminExam() {
                     <td className="px-6 py-5">
 
                       <span
-                        className={`px-3 py-1 rounded-full text-xs ${
-                          exam.isActive
-                            ? "bg-green-500/20 text-green-400"
-                            : "bg-red-500/20 text-red-400"
-                        }`}
+                        className={`px-3 py-1 rounded-full text-xs ${exam.isActive
+                          ? "bg-green-500/20 text-green-400"
+                          : "bg-red-500/20 text-red-400"
+                          }`}
                       >
                         {exam.isActive
                           ? "Đang mở"
@@ -515,15 +521,16 @@ export default function AdminExam() {
 
                     <input
                       type="number"
-                      value={formData.duration}
-                      onChange={(e) =>
+                      min="1"
+                      value={formData.duration || ''}
+                      onChange={(e) => {
+                        const value = e.target.value;
+
                         setFormData({
                           ...formData,
-                          duration: Number(
-                            e.target.value
-                          ),
-                        })
-                      }
+                          duration: value === '' ? 0 : Number(value),
+                        });
+                      }}
                       className="w-full px-4 py-3 rounded-xl bg-[#0f172a] border border-white/10 outline-none"
                     />
 

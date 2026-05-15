@@ -21,6 +21,7 @@ export default function RandomExamPage() {
     const [formData, setFormData] =
         useState({
             title: 'Đề ngẫu nhiên',
+            description: '',
             subjectId: '',
             questionCount: '',
             duration: '',
@@ -64,6 +65,7 @@ export default function RandomExamPage() {
 
             const payload = {
                 title: formData.title,
+                Description: formData.description,
                 subjectId: Number(
                     formData.subjectId
                 ),
@@ -89,7 +91,7 @@ export default function RandomExamPage() {
                 'Tạo đề ngẫu nhiên thành công!'
             );
 
-           router.push('/admin/exams');
+            router.push('/admin/exams');
 
         } catch (error: any) {
             console.error(error);
@@ -207,6 +209,24 @@ export default function RandomExamPage() {
 
                         </select>
 
+                    </div>
+
+                    {/* DESCRIPTION */}
+                    <div>
+                        <label className="block mb-2">
+                            Mô tả
+                        </label>
+
+                        <textarea
+                            value={formData.description}
+                            onChange={(e) =>
+                                setFormData({
+                                    ...formData,
+                                    description: e.target.value,
+                                })
+                            }
+                            className="w-full min-h-[100px] px-4 py-3 rounded-xl bg-[#0f172a] border border-white/10 outline-none"
+                        />
                     </div>
 
                     {/* QUESTION COUNT */}

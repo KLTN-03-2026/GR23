@@ -6,6 +6,7 @@ namespace alilexba_backend.DTOs
     public class CreateExamRequest
     {
         public string Title { get; set; } = string.Empty;
+         public string? Description { get; set; }
         public int SubjectId { get; set; }
         public int Duration { get; set; } // Thời gian làm bài (phút)
         public int QuestionCount { get; set; } // Số lượng câu hỏi muốn lấy ngẫu nhiên
