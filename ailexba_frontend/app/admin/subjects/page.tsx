@@ -456,7 +456,7 @@ export default function AdminSubjectsPage() {
                       <tr>
 
                         <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">
-                          ID
+                          No
                         </th>
 
                         <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">
@@ -476,7 +476,7 @@ export default function AdminSubjectsPage() {
                       <AnimatePresence>
 
                         {filteredSubjects.map(
-                          (sub) => (
+                          (sub,index) => (
                             <motion.tr
                               key={sub.id}
                               initial={{
@@ -494,7 +494,7 @@ export default function AdminSubjectsPage() {
                               <td className="px-6 py-5">
 
                                 <span className="font-mono text-sm font-bold text-indigo-400 bg-indigo-500/10 px-2 py-1 rounded-lg">
-                                  #{sub.id}
+                                  {index + 1}
                                 </span>
 
                               </td>

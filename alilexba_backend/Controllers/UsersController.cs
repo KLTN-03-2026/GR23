@@ -24,7 +24,7 @@ namespace alilexba_backend.Controllers
         public async Task<IActionResult> GetAllUsers()
         {
             var users = await _context.Users
-                .Select(u => new { u.Id, u.FullName, u.Email, u.Role })
+                .Select(u => new { u.Id, u.FullName, u.Email, u.Role, u.CreatedAt })
                 .ToListAsync();
 
             return Ok(users);

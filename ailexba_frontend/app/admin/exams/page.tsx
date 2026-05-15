@@ -11,6 +11,7 @@ interface ExamItem {
   title: string;
   description?: string;
   subjectId: number;
+  subjectName: string;
   duration: number;
   createdAt: string;
   difficulty?: string;
@@ -93,6 +94,7 @@ export default function AdminExam() {
         subjectId:
           item.subjectId ??
           item.SubjectId,
+        subjectName: item.subjectName ?? "",
         duration:
           item.duration ??
           item.Duration,
@@ -205,7 +207,9 @@ export default function AdminExam() {
 
     } catch (error: any) {
 
-      console.error(error);
+      if (error?.response?.status !== 400) {
+        console.error(error);
+      }
 
       alert(
         error?.response?.data?.message ||
@@ -356,16 +360,16 @@ export default function AdminExam() {
                           {exam.title}
                         </p>
 
-                        <p className="text-xs text-slate-400">
+                        {/* <p className="text-xs text-slate-400">
                           #{exam.id}
-                        </p>
+                        </p> */}
 
                       </div>
 
                     </td>
 
                     <td className="px-6 py-5">
-                      #{exam.subjectId}
+                      {exam.subjectName}
                     </td>
 
                     <td className="px-6 py-5">
