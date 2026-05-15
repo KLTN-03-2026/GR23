@@ -3,9 +3,11 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import api from '@/services/common';
 
 export default function HomePage() {
   const [user, setUser] = useState<any>(null);
+  const [sampleExams, setSampleExams] = useState<any[]>([]);
 
   const router = useRouter();
 
@@ -25,13 +27,18 @@ export default function HomePage() {
         router.push('/dashboard');
       }
     }
+
+    (async () => {
+      var response = await api.get(`exams/samples`);
+      const exams = response.data;
+      const shuffled = exams.sort(() => 0.5 - Math.random());
+
+      setSampleExams(shuffled.slice(0, 3));
+    })();
+    
   }, []);
 
-  const sampleExams = [
-    { id: 1, name: 'Đề Toán THPTQG 2026', subject: 'Toán', time: '90 Phút', level: 'Khó' },
-    { id: 2, name: 'Đề Tiếng Anh THPTQG 2026', subject: 'Anh', time: '60 Phút', level: 'Trung bình' },
-    { id: 3, name: 'Đề ĐGNL Mẫu', subject: 'Tổng hợp', time: '120 Phút', level: 'Nâng cao' },
-  ];
+  
 
   return (
     <div className="relative space-y-24 py-16">
@@ -109,20 +116,20 @@ export default function HomePage() {
               <div className="bg-slate-900/80 backdrop-blur-xl rounded-3xl p-6 h-full flex flex-col">
 
                 <div className="absolute top-4 right-4 text-xs bg-blue-500/10 text-blue-400 px-3 py-1 rounded-full">
-                  {exam.subject}
+                  {exam.subjectName}
                 </div>
 
                 <h3 className="text-xl font-bold mb-3 pr-20">
-                  {exam.name}
+                  {exam.title}
                 </h3>
 
                 <div className="flex justify-between text-sm text-slate-400 mb-6">
-                  <span>⏱ {exam.time}</span>
-                  <span>📊 {exam.level}</span>
+                  <span>⏱ {exam.duration}</span>
+                  <span>📊 {exam.difficulty}</span>
                 </div>
 
                 <div className="mt-auto pt-6">
-                  <Link href="/exams">
+                  <Link href={user ? `/exam/${exam.id}` : "/login"}>
                     <button className="w-full py-4 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold">
                       Làm thử ngay
                     </button>
